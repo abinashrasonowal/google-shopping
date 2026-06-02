@@ -55,7 +55,7 @@ Each item in the dataset contains:
 
 ## Proxy requirements
 
-This actor requires **SERP proxies** (`GOOGLE_SERP` group) to avoid blocks. These are available on Apify's Starter plan and above.
+This actor uses **residential proxies** (`RESIDENTIAL` group) to reduce sparse Google Shopping responses and blocks. Make sure residential proxy access is enabled on your Apify account.
 
 ## Cost
 

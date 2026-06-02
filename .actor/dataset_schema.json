@@ -29,7 +29,12 @@
     "sellers": {
       "title": "Sellers",
       "type": "array",
-      "description": "Merchant offers found on the immersive page"
+      "description": "Merchant offers found on the immersive page, including price, target URL, logo, and offer title when available"
+    },
+    "offers": {
+      "title": "Offers",
+      "type": "array",
+      "description": "Offer-focused copy of sellers with merchant, price, currency, title, logo, and target URL"
     },
     "competing_products": {
       "title": "Competing products",

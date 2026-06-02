@@ -23,7 +23,22 @@ async def scrape_product(http_client: HttpClient, url: str, country: str) -> dic
         Actor.log.warning('Blocked by Google (captcha / unusual traffic)')
         return None
 
-    return scraper.parse_product(soup)
+    product = scraper.parse_product(soup)
+    Actor.log.info(
+        'Parsed product blocks: title=%s features=%d buying_options=%d competing_products=%d',
+        product.get('title'),
+        len(product.get('features') or {}),
+        len(product.get('buying_options') or []),
+        len(product.get('competing_products') or []),
+    )
+    if not product.get('features') and not product.get('buying_options'):
+        Actor.log.warning(
+            'Fetched HTML did not contain Google Shopping immersive product blocks. '
+            'This usually means Google returned a sparse/static variant for this request.'
+        )
+        await Actor.set_value('sparse-response.html', html, content_type='text/html')
+
+    return product
 
 
 async def main() -> None:
@@ -35,7 +50,7 @@ async def main() -> None:
         if not url:
             raise ValueError('Input field "url" is required')
 
-        proxy_url = await get_proxy_url(groups=['GOOGLE_SERP'], country_code=country.upper())
+        proxy_url = await get_proxy_url(groups=['RESIDENTIAL'], country_code=country.upper())
         http_client = ProxyHttpClient(proxy_url)
 
         product = await scrape_product(http_client, url, country)

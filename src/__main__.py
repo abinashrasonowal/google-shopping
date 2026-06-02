@@ -35,7 +35,7 @@ async def main() -> None:
         if not url:
             raise ValueError('Input field "url" is required')
 
-        proxy_url = await get_proxy_url(groups=['GOOGLE_SERP'], country_code=country.upper())
+        proxy_url = await get_proxy_url(groups=['RESIDENTIAL'], country_code=country.upper())
         http_client = ProxyHttpClient(proxy_url)
 
         product = await scrape_product(http_client, url, country)
