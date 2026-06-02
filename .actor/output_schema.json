@@ -1,0 +1,23 @@
+{
+  "actorSpecification": 1,
+  "views": {
+    "overview": {
+      "title": "Immersive product",
+      "transformation": {
+        "fields": ["title", "rating", "review_count", "features", "sellers", "competing_products", "fetch_url"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "title": { "label": "Product" },
+          "rating": { "label": "Rating" },
+          "review_count": { "label": "Reviews" },
+          "features": { "label": "Features" },
+          "sellers": { "label": "Sellers" },
+          "competing_products": { "label": "Competitors" },
+          "fetch_url": { "label": "Fetch URL", "format": "link" }
+        }
+      }
+    }
+  }
+}
