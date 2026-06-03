@@ -1,0 +1,14 @@
+{
+    "$schema": "https://apify.com/schemas/v1/actor.ide.json",
+    "actorSpecification": 1,
+    "name": "google-shopping-immersive",
+    "title": "Google Shopping Immersive",
+    "description": "Scrapes basic product details from a Google Shopping immersive product URL containing prds.",
+    "version": "0.0",
+    "buildTag": "latest",
+    "input": "./input_schema.json",
+    "dockerfile": "../Dockerfile",
+    "runOptions": {
+        "command": "python main.py"
+    }
+}

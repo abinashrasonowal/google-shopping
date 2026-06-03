@@ -1,0 +1,59 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Google Shopping Immersive Scraper",
+    "version": "1.0.0",
+    "description": "Scrapes details of a specific product from Google Shopping immersive page using a product URL."
+  },
+  "paths": {
+    "/run-sync-get-dataset-items": {
+      "post": {
+        "operationId": "runScraper",
+        "summary": "Run scraper and return product details",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "Google Shopping immersive product URL"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "2-letter country code e.g. in, us, gb",
+                    "default": "in"
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Scraped product details",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "title": { "type": "string" },
+                      "rating": { "type": "number", "nullable": true },
+                      "review_count": { "type": "integer", "nullable": true },
+                      "features": { "type": "object", "nullable": true },
+                      "sellers": { "type": "array", "items": { "type": "object" }, "nullable": true },
+                      "competing_products": { "type": "array", "items": { "type": "object" }, "nullable": true },
+                      "fetch_url": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
