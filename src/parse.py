@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from __future__ import annotations
-
 import asyncio
 
 from apify import Actor
@@ -10,7 +8,7 @@ from bs4 import BeautifulSoup
 from src.client.http_client import HttpClient
 from src.client.proxy import get_proxy_url
 from src.client.proxy_http_client import ProxyHttpClient
-from src.scraper.google_shopping_immersive import GoogleShoppingImmersiveScraper
+from src.scraper import GoogleShoppingImmersiveScraper
 
 
 async def run_immersive(http_client: HttpClient, url: str, country: str) -> dict | None:
