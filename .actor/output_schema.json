@@ -1,0 +1,22 @@
+{
+  "actorSpecification": 1,
+  "views": {
+    "overview": {
+      "title": "Products",
+      "transformation": {
+        "fields": ["title", "price", "rating", "review_count", "source", "url"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "title": { "label": "Title" },
+          "price": { "label": "Price" },
+          "rating": { "label": "Rating" },
+          "review_count": { "label": "Reviews" },
+          "source": { "label": "Source" },
+          "url": { "label": "URL", "format": "link" }
+        }
+      }
+    }
+  }
+}

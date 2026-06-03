@@ -1,0 +1,22 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "Google Shopping Scraper",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "q": {
+            "title": "Search Query",
+            "type": "string",
+            "description": "Google Shopping search query (e.g. wireless headphones)",
+            "editor": "textfield"
+        },
+        "country": {
+            "title": "Country Code",
+            "type": "string",
+            "description": "Google country code for localized results (e.g. us, gb, in)",
+            "default": "in",
+            "editor": "textfield"
+        }
+    },
+    "required": ["q"]
+}

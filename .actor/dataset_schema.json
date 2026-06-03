@@ -1,0 +1,35 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "title": {
+      "title": "Title",
+      "type": "string",
+      "description": "Product name"
+    },
+    "url": {
+      "title": "URL",
+      "type": "string",
+      "description": "Google Shopping product link"
+    },
+    "price": {
+      "title": "Price",
+      "type": "string",
+      "description": "Product price"
+    },
+    "rating": {
+      "title": "Rating",
+      "type": "number",
+      "description": "Average rating out of 5"
+    },
+    "review_count": {
+      "title": "Review count",
+      "type": "integer",
+      "description": "Total number of reviews"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string",
+      "description": "Merchant name or seller source"
+    }
+  }
+}
