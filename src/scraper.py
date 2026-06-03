@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from apify import Actor
@@ -12,6 +13,53 @@ from src.client.proxy_http_client import ProxyHttpClient
 from src.parser import GoogleShoppingImmersiveParser
 
 _OSHOP_BASE_URL = "https://www.google.com/search"
+_GOOGLE_DOMAIN_RE = re.compile(r'(^|\.)(google\.[a-z]{2,}(\.\w{2})?)$', re.IGNORECASE)
+_COUNTRY_CODE_RE = re.compile(r'^[a-z]{2}$', re.IGNORECASE)
+
+
+def validate_input(url: str | None, country: str | None) -> None:
+    """Raise ValueError with a descriptive message for any invalid input."""
+    # --- url ---
+    if not url or not url.strip():
+        raise ValueError(
+            'Input field "url" is required. '
+            'Provide a Google Shopping product URL containing a prds= query parameter.'
+        )
+
+    parsed = urlparse(url)
+
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError(
+            f'"url" does not look like a valid URL: {url!r}. '
+            'Expected a full URL starting with https://www.google.com/...'
+        )
+
+    if parsed.scheme.lower() != 'https':
+        raise ValueError(
+            f'"url" must use the https scheme, got {parsed.scheme!r}. '
+            'Google Shopping URLs always start with https://'
+        )
+
+    if not _GOOGLE_DOMAIN_RE.search(parsed.netloc):
+        raise ValueError(
+            f'"url" must be a Google domain (e.g. google.com, google.co.in), '
+            f'got {parsed.netloc!r}.'
+        )
+
+    query_params = parse_qs(parsed.query)
+    if not query_params.get('prds', [''])[0]:
+        raise ValueError(
+            '"url" must contain a prds= query parameter. '
+            'Open a product in Google Shopping, copy the full URL from the address bar — '
+            'it should contain prds=eto:... or similar.'
+        )
+
+    # --- country ---
+    if country is not None and not _COUNTRY_CODE_RE.match(country):
+        raise ValueError(
+            f'"country" must be a 2-letter ISO country code (e.g. "in", "us", "gb"), '
+            f'got {country!r}.'
+        )
 
 
 class GoogleShoppingImmersiveScraper:
@@ -23,9 +71,6 @@ class GoogleShoppingImmersiveScraper:
     def build_immersive_url(self) -> str:
         parsed_url = urlparse(self.url)
         query_params = parse_qs(parsed_url.query)
-        prds = query_params.get('prds', [''])[0]
-        if not prds:
-            raise ValueError('Input URL must contain a prds query parameter')
 
         params = dict(query_params)
         params.setdefault('ibp', ['oshop'])
@@ -87,8 +132,7 @@ async def main() -> None:
         url = actor_input.get('url')
         country = actor_input.get('country', 'in')
 
-        if not url:
-            raise ValueError('Input field "url" is required')
+        validate_input(url, country)
 
         proxy_url = await get_proxy_url(groups=['RESIDENTIAL'], country_code=country.upper())
         http_client = ProxyHttpClient(proxy_url)

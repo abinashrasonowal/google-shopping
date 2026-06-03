@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any
 
 import aiohttp
 
 from .http_client import HttpClient
+
+log = logging.getLogger(__name__)
+
+_MAX_RETRIES = 3
+_RETRY_BACKOFF_BASE = 1.0  # seconds; doubles each attempt
 
 
 class ProxyHttpClient(HttpClient):
@@ -35,13 +42,28 @@ class ProxyHttpClient(HttpClient):
         }
 
     async def fetch(self, url: str, **kwargs: Any) -> str:
-        async with aiohttp.ClientSession(headers=self.headers) as session:
-            async with session.get(
-                url,
-                proxy=self.proxy_url,
-                ssl=False,
-                timeout=aiohttp.ClientTimeout(total=30),
-                **kwargs,
-            ) as response:
-                response.raise_for_status()
-                return await response.text()
+        last_exc: Exception | None = None
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                async with aiohttp.ClientSession(headers=self.headers) as session:
+                    async with session.get(
+                        url,
+                        proxy=self.proxy_url,
+                        ssl=False,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                        **kwargs,
+                    ) as response:
+                        response.raise_for_status()
+                        return await response.text()
+            except (aiohttp.ClientHttpProxyError, aiohttp.ClientResponseError) as exc:
+                last_exc = exc
+                if attempt < _MAX_RETRIES:
+                    delay = _RETRY_BACKOFF_BASE * (2 ** (attempt - 1))
+                    log.warning(
+                        'Proxy/HTTP error on attempt %d/%d (%s). Retrying in %.0fs...',
+                        attempt, _MAX_RETRIES, exc, delay,
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    log.error('All %d attempts failed. Last error: %s', _MAX_RETRIES, exc)
+        raise last_exc  # type: ignore[misc]

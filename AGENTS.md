@@ -133,6 +133,7 @@ Actor.get_input()
 6. **`HttpClient` interface** — always program to the abstract `HttpClient`; swap `ProxyHttpClient` ↔ `LocalHttpClient` for prod vs local
 7. **No Playwright / browser** — this actor is HTTP-only (aiohttp); do not add Playwright here
 8. **Proxy group** — must use `RESIDENTIAL` group; `DATACENTER` group typically gets blocked by Google
+9. **Retry logic** — `ProxyHttpClient.fetch()` retries up to 3 times with exponential backoff (1s, 2s, 4s) on `ClientHttpProxyError` and `ClientResponseError`; handles transient `UPSTREAM502` / `590` errors from the residential proxy tier
 
 ---
 
