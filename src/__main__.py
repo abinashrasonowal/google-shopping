@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from src.parse import main
+from src.scraper import main
 
 
 if __name__ == '__main__':
