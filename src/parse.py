@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from __future__ import annotations
-
 import asyncio
 
 from apify import Actor
@@ -10,7 +8,7 @@ from bs4 import BeautifulSoup
 from src.client.http_client import HttpClient
 from src.client.proxy import get_proxy_url
 from src.client.proxy_http_client import ProxyHttpClient
-from src.scraper.google_shopping import GoogleShoppingScraper
+from src.scraper import GoogleShoppingScraper
 
 
 async def run_shopping(http_client: HttpClient, query: str, country: str) -> list[dict]:
