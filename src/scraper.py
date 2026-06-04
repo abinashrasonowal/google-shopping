@@ -73,7 +73,7 @@ async def main() -> None:
         if not query:
             raise ValueError('Input field "q" is required')
 
-        proxy_url = await get_proxy_url(groups=['RESIDENTIAL'], country_code=country.upper())
+        proxy_url = await get_proxy_url(groups=['GOOGLE_SERP'], country_code=country.upper())
         http_client = ProxyHttpClient(proxy_url)
 
         products = await run_shopping(http_client, query, country)
@@ -84,3 +84,4 @@ async def main() -> None:
 
 if __name__ == '__main__':
     asyncio.run(main())
+    
