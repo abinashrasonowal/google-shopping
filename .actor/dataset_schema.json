@@ -1,9 +1,15 @@
 {
   "actorSpecification": 1,
   "fields": {
+    "position": {
+      "title": "Position",
+      "type": "integer",
+      "description": "Position in search results"
+    },
     "title": {
       "title": "Title",
       "type": "string",
+      "nullable": true,
       "description": "Product name"
     },
     "url": {
@@ -14,22 +20,32 @@
     "price": {
       "title": "Price",
       "type": "string",
+      "nullable": true,
       "description": "Product price"
     },
     "rating": {
       "title": "Rating",
       "type": "number",
+      "nullable": true,
       "description": "Average rating out of 5"
     },
     "review_count": {
       "title": "Review count",
       "type": "integer",
+      "nullable": true,
       "description": "Total number of reviews"
     },
     "source": {
       "title": "Source",
       "type": "string",
+      "nullable": true,
       "description": "Merchant name or seller source"
+    },
+    "image": {
+      "title": "Image",
+      "type": "string",
+      "nullable": true,
+      "description": "Product image URL"
     }
   }
 }

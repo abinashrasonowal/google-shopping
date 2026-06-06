@@ -9,12 +9,14 @@ Searches Google Shopping for any query and returns structured product data direc
 **Sample output:**
 ```json
 {
+  "position": 1,
   "title": "Apple iPhone 16 256GB",
   "price": "₹79,900",
   "rating": 4.6,
   "review_count": 11000,
   "source": "Flipkart",
-  "url": "https://www.google.com/search?ibp=oshop&..."
+  "url": "https://www.google.com/search?ibp=oshop&...",
+  "image": "https://encrypted-tbn0.gstatic.com/shopping?..."
 }
 ```
 
@@ -38,13 +40,15 @@ Searches Google Shopping for any query and returns structured product data direc
 Each item in the dataset contains:
 
 | Field | Type | Description |
-|---|---|---|
+|---|---|---|---|
+| `position` | integer | Position in search results |
 | `title` | string | Product name |
 | `price` | string | Current price e.g. `₹79,900` |
 | `rating` | number | Average rating out of 5 |
 | `review_count` | integer | Total review count |
 | `source` | string | Primary store name |
 | `url` | string | Google Shopping product URL |
+| `image` | string | Product image URL |
 
 ## Usage notes
 
@@ -55,7 +59,7 @@ Each item in the dataset contains:
 
 ## Proxy requirements
 
-This actor uses **residential proxies** (`RESIDENTIAL` group) to reduce sparse Google Shopping responses and blocks. Make sure residential proxy access is enabled on your Apify account.
+This actor uses **SERP proxies** (`GOOGLE_SERP` group) to reliably fetch Google Shopping results. Make sure SERP proxy access is enabled on your Apify account.
 
 ## Cost
 

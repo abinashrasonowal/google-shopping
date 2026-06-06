@@ -4,7 +4,7 @@
     "overview": {
       "title": "Products",
       "transformation": {
-        "fields": ["title", "price", "rating", "review_count", "source", "url"]
+        "fields": ["position", "title", "price", "rating", "review_count", "source", "url", "image"]
       },
       "display": {
         "component": "table",

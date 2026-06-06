@@ -42,15 +42,14 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "title":        { "type": "string" },
+                      "position":     { "type": "integer" },
+                      "title":        { "type": "string", "nullable": true },
                       "url":          { "type": "string", "format": "uri" },
                       "price":        { "type": "string", "nullable": true },
                       "rating":       { "type": "number", "nullable": true },
                       "review_count": { "type": "integer", "nullable": true },
-                      "image_url":    { "type": "string", "format": "uri", "nullable": true },
-                      "source":       { "type": "string", "nullable": true },
-                      "delivery":     { "type": "string", "nullable": true },
-                      "returns":      { "type": "string", "nullable": true }
+                      "image":        { "type": "string", "format": "uri", "nullable": true },
+                      "source":       { "type": "string", "nullable": true }
                     }
                   }
                 }
