@@ -39,13 +39,17 @@
                   "schema": {
                     "type": "object",
                     "properties": {
-                      "title": { "type": "string" },
+                      "input_url": { "type": "string" },
+                      "final_url": { "type": "string" },
+                      "title": { "type": "string", "nullable": true },
+                      "description": { "type": "string", "nullable": true },
+                      "images": { "type": "array", "items": { "type": "string" } },
                       "rating": { "type": "number", "nullable": true },
                       "review_count": { "type": "integer", "nullable": true },
                       "features": { "type": "object", "nullable": true },
-                      "sellers": { "type": "array", "items": { "type": "object" }, "nullable": true },
-                      "competing_products": { "type": "array", "items": { "type": "object" }, "nullable": true },
-                      "fetch_url": { "type": "string" }
+                      "filters": { "type": "array", "items": { "type": "object" }, "nullable": true },
+                      "buying_options": { "type": "array", "items": { "type": "object" }, "nullable": true },
+                      "competing_products": { "type": "array", "items": { "type": "object" }, "nullable": true }
                     }
                   }
                 }

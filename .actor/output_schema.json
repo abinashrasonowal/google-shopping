@@ -4,7 +4,7 @@
     "overview": {
       "title": "Immersive product",
       "transformation": {
-        "fields": ["title", "rating", "review_count", "features", "sellers", "competing_products", "fetch_url"]
+        "fields": ["title", "rating", "review_count", "features", "buying_options", "competing_products", "final_url"]
       },
       "display": {
         "component": "table",
@@ -13,9 +13,9 @@
           "rating": { "label": "Rating" },
           "review_count": { "label": "Reviews" },
           "features": { "label": "Features" },
-          "sellers": { "label": "Sellers" },
+          "buying_options": { "label": "Buying options" },
           "competing_products": { "label": "Competitors" },
-          "fetch_url": { "label": "Fetch URL", "format": "link" }
+          "final_url": { "label": "Fetch URL", "format": "link" }
         }
       }
     }

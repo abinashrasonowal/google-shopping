@@ -1,15 +1,30 @@
 {
   "actorSpecification": 1,
   "fields": {
+    "input_url": {
+      "title": "Input URL",
+      "type": "string",
+      "description": "Original input URL"
+    },
+    "final_url": {
+      "title": "Fetch URL",
+      "type": "string",
+      "description": "Normalized Google immersive URL fetched by the actor"
+    },
     "title": {
       "title": "Title",
       "type": "string",
       "description": "Product name"
     },
-    "rating_label": {
-      "title": "Rating label",
+    "description": {
+      "title": "Description",
       "type": "string",
-      "description": "Original Google rating text"
+      "description": "Product description"
+    },
+    "images": {
+      "title": "Images",
+      "type": "array",
+      "description": "Product image URLs, primary image first"
     },
     "rating": {
       "title": "Rating",
@@ -26,30 +41,20 @@
       "type": "object",
       "description": "Product attributes/specifications"
     },
-    "sellers": {
-      "title": "Sellers",
+    "filters": {
+      "title": "Filters",
       "type": "array",
-      "description": "Merchant offers found on the immersive page, including price, target URL, logo, and offer title when available"
+      "description": "Variant filters (e.g. Colour, Capacity) with available options and selected state"
     },
-    "offers": {
-      "title": "Offers",
+    "buying_options": {
+      "title": "Buying options",
       "type": "array",
-      "description": "Offer-focused copy of sellers with merchant, price, currency, title, logo, and target URL"
+      "description": "Merchant offers with price, currency, delivery info, seller logo, and offer title"
     },
     "competing_products": {
       "title": "Competing products",
       "type": "array",
       "description": "Lower-priced or related product options shown by Google"
-    },
-    "input_url": {
-      "title": "Input URL",
-      "type": "string",
-      "description": "Original input URL"
-    },
-    "fetch_url": {
-      "title": "Fetch URL",
-      "type": "string",
-      "description": "Normalized Google immersive URL fetched by the actor"
     }
   }
 }

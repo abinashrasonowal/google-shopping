@@ -87,15 +87,25 @@ For local debugging, `test.py` can parse a saved `p.html` file and print the par
 ```python
 {
     "input_url":           str,           # URL from actor input
-    "all_images":          list[str],     # Product image URLs, primary image first
+    "final_url":           str,           # Normalized Google immersive URL fetched
     "title":               str | None,
+    "description":         str | None,
+    "images":              list[str],     # Product image URLs, primary image first
     "rating":              float | None,  # e.g. 4.6
     "review_count":        int | None,    # e.g. 11000 (handles "11k" → 11000)
     "features":            dict[str, str],# e.g. {"Storage": "256 GB", "Color": "Black"}
+    "filters": [{
+        "category":        str,           # e.g. "Colour", "Capacity"
+        "options": [{
+            "name":        str,
+            "selected":    bool,
+            "image":       str | None,    # swatch image URL for colour variants
+        }],
+    }],
     "buying_options": [{
-        "merchant":        str,
-        "merchant_id":     str,
-        "offer_id":        str,
+        "merchant":        str | None,
+        "merchant_id":     str | None,
+        "offer_id":        str | None,
         "title":           str | None,
         "price":           str | None,    # e.g. "₹79,900"
         "currency":        str | None,    # ISO 4217 e.g. "INR"
@@ -107,7 +117,7 @@ For local debugging, `test.py` can parse a saved `p.html` file and print the par
         "seller_logo":     str | None,
     }],
     "competing_products": [{
-        "product_id":      str,
+        "product_id":      str | None,
         "text":            str,
     }],
 }

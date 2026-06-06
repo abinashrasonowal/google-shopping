@@ -15,12 +15,13 @@ Given a Google Shopping product URL (the kind with a `prds=` query parameter), t
 ```json
 {
   "input_url": "https://www.google.com/search?prds=eto:...&q=iphone+16",
-  "fetch_url": "https://www.google.com/search?prds=eto:...&ibp=oshop&hl=en&gl=in&udm=28",
-  "all_images": [
+  "final_url": "https://www.google.com/search?prds=eto:...&ibp=oshop&hl=en&gl=in&udm=28",
+  "title": "Apple iPhone 16 256GB",
+  "description": "The latest iPhone with A18 chip and 48MP camera",
+  "images": [
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR...",
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS..."
   ],
-  "title": "Apple iPhone 16 256GB",
   "rating": 4.6,
   "review_count": 11000,
   "features": {
@@ -28,6 +29,15 @@ Given a Google Shopping product URL (the kind with a `prds=` query parameter), t
     "Color": "Black",
     "Model": "iPhone 16"
   },
+  "filters": [
+    {
+      "category": "Colour",
+      "options": [
+        { "name": "Black", "selected": true, "image": null },
+        { "name": "White", "selected": false, "image": null }
+      ]
+    }
+  ],
   "buying_options": [
     {
       "merchant": "Flipkart",
@@ -40,7 +50,8 @@ Given a Google Shopping product URL (the kind with a `prds=` query parameter), t
       "target_url": "https://www.flipkart.com/...",
       "status": "In stock",
       "delivery": "Free delivery by Tomorrow",
-      "offer_rating": 4.5
+      "offer_rating": 4.5,
+      "seller_logo": null
     }
   ],
   "competing_products": [
@@ -76,12 +87,14 @@ A single dataset item per run containing:
 | Field | Type | Description |
 |---|---|---|
 | `input_url` | string | The URL provided as input |
-| `fetch_url` | string | The full URL fetched (with injected `ibp`, `hl`, `gl`, `udm` params) |
-| `all_images` | array[string] | List of product image URLs, with the primary image first |
-| `title` | string | Product name |
+| `final_url` | string | The full URL fetched (with injected `ibp`, `hl`, `gl`, `udm` params) |
+| `title` | string \| null | Product name |
+| `description` | string \| null | Product description text |
+| `images` | array[string] | List of product image URLs, with the primary image first |
 | `rating` | number \| null | Aggregate rating out of 5 |
 | `review_count` | integer \| null | Total number of reviews |
 | `features` | object | Key–value product specifications (e.g. `{"Storage": "256 GB"}`) |
+| `filters` | array | Variant filter groups (e.g. Colour, Capacity) with options and selected state |
 | `buying_options` | array | Per-seller listings (see below) |
 | `competing_products` | array | Related products shown by Google |
 
@@ -89,9 +102,9 @@ A single dataset item per run containing:
 
 | Field | Type | Description |
 |---|---|---|
-| `merchant` | string | Seller name |
-| `merchant_id` | string | Google's internal merchant ID |
-| `offer_id` | string | Google's offer ID |
+| `merchant` | string \| null | Seller name |
+| `merchant_id` | string \| null | Google's internal merchant ID |
+| `offer_id` | string \| null | Google's offer ID |
 | `title` | string \| null | Offer-specific title if different from the product title |
 | `price` | string \| null | Current price e.g. `₹79,900` |
 | `currency` | string \| null | ISO 4217 currency code e.g. `INR`, `USD` |
