@@ -52,6 +52,8 @@ Actor.get_input()
   → Actor.push_data(product)
 ```
 
+For local debugging, `test.py` can parse a saved `p.html` file and print the parser output without running the actor.
+
 ---
 
 ## Key classes & functions
@@ -85,7 +87,7 @@ Actor.get_input()
 ```python
 {
     "input_url":           str,           # URL from actor input
-    "fetch_url":           str,           # Final URL fetched (with injected params)
+    "all_images":          list[str],     # Product image URLs, primary image first
     "title":               str | None,
     "rating":              float | None,  # e.g. 4.6
     "review_count":        int | None,    # e.g. 11000 (handles "11k" → 11000)
@@ -102,6 +104,7 @@ Actor.get_input()
         "status":          str | None,    # e.g. "In stock"
         "delivery":        str | None,
         "offer_rating":    float | None,
+        "seller_logo":     str | None,
     }],
     "competing_products": [{
         "product_id":      str,
@@ -143,11 +146,14 @@ Actor.get_input()
 # Install deps
 pip install -r requirements.txt
 
+# Run the actor locally with Apify input
+apify run
+
 # Run without proxy (local dev) — swap ProxyHttpClient → LocalHttpClient in scraper.py temporarily
 python main.py
 
-# Run with Apify CLI (uses actor input from .actor/input_schema.json)
-apify run
+# Parse a saved HTML sample for parser validation
+python test.py p.html
 ```
 
 ---

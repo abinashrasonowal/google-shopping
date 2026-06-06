@@ -6,5 +6,5 @@ from typing import Any
 
 class HttpClient(ABC):
     @abstractmethod
-    async def fetch(self, url: str, **kwargs: Any) -> str:
+    async def fetch(self, url: str, **kwargs: Any) -> tuple[str, str]:
         ...

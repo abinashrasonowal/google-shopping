@@ -80,7 +80,8 @@ class GoogleShoppingImmersiveScraper:
 
         return f'{_OSHOP_BASE_URL}?{urlencode(params, doseq=True)}'
 
-    async def fetch_html(self) -> str:
+    # UPDATED: Now returns a tuple of (html_content, final_url)
+    async def fetch_page(self) -> tuple[str, str]:
         return await self.http_client.fetch(self.build_immersive_url())
 
     @staticmethod
@@ -99,15 +100,16 @@ async def run_immersive(http_client: HttpClient, url: str, country: str) -> dict
     fetch_url = scraper.build_immersive_url()
     Actor.log.info('Fetching immersive product URL: %s', fetch_url)
 
-    html = await scraper.fetch_html()
-    Actor.log.info('Fetched %d bytes of HTML', len(html))
+    html, final_url = await scraper.fetch_page()
+    Actor.log.info('Fetched %d bytes of HTML. Final URL: %s', len(html), final_url[:100])
 
     soup = BeautifulSoup(html, 'html.parser')
     if scraper.is_blocked(soup):
         Actor.log.warning('Blocked by Google (captcha / unusual traffic)')
         return None
 
-    product = GoogleShoppingImmersiveParser.parse_product(soup, url, fetch_url)
+    product = GoogleShoppingImmersiveParser.parse_product(soup, url, final_url)
+
     Actor.log.info(
         'Parsed product blocks: title=%s features=%d buying_options=%d competing_products=%d',
         product.get('title'),

@@ -41,7 +41,7 @@ class ProxyHttpClient(HttpClient):
             'Upgrade-Insecure-Requests': '1',
         }
 
-    async def fetch(self, url: str, **kwargs: Any) -> str:
+    async def fetch(self, url: str, **kwargs: Any) -> tuple[str, str]:
         last_exc: Exception | None = None
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
@@ -54,7 +54,7 @@ class ProxyHttpClient(HttpClient):
                         **kwargs,
                     ) as response:
                         response.raise_for_status()
-                        return await response.text()
+                        return await response.text(), str(response.url)
             except (aiohttp.ClientHttpProxyError, aiohttp.ClientResponseError) as exc:
                 last_exc = exc
                 if attempt < _MAX_RETRIES:

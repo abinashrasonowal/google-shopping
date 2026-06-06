@@ -33,7 +33,7 @@ class LocalHttpClient(HttpClient):
             'Upgrade-Insecure-Requests': '1',
         }
 
-    async def fetch(self, url: str, **kwargs: Any) -> str:
+    async def fetch(self, url: str, **kwargs: Any) -> tuple[str, str] :
         async with aiohttp.ClientSession(headers=self.headers) as session:
             async with session.get(
                 url,
@@ -42,4 +42,4 @@ class LocalHttpClient(HttpClient):
                 **kwargs,
             ) as response:
                 response.raise_for_status()
-                return await response.text()
+                return await response.text(), str(response.url)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 import json
 from bs4 import BeautifulSoup
-import codecs
 
 _CURRENCY_BY_SYMBOL = {
     '₹': 'INR',
@@ -20,12 +19,22 @@ class GoogleShoppingImmersiveParser:
             return None
         return re.sub(r'\s+', ' ', value).strip()
 
+    @classmethod
+    def _extract_injected_soup(cls, soup: BeautifulSoup) -> BeautifulSoup:
+        """Extracts and parses deferred HTML payloads hidden inside script tags."""
+        injected_html = ""
+        for script in soup.find_all('script'):
+            text = script.get_text()
+            if 'jsl.dh(' in text:
+                clean_text = text.replace(r'\x3c', '<').replace(r'\x3e', '>').replace(r'\"', '"')
+                injected_html += clean_text
+        return BeautifulSoup(injected_html, 'html.parser')
+
     @staticmethod
     def _extract_image_map(html: str) -> dict[str, str]:
         """Extracts image mappings from google.ldi and _setImagesSrc scripts."""
         image_map = {}
         
-        # 1. Parse google.ldi (Main product images)
         ldi_match = re.search(r'google\.ldi\s*=\s*({.*?});', html, re.DOTALL)
         if ldi_match:
             try:
@@ -33,7 +42,6 @@ class GoogleShoppingImmersiveParser:
             except (json.JSONDecodeError, ValueError):
                 pass
                 
-        # 2. Parse _setImagesSrc (Seller logos and favicons)
         script_pattern = re.compile(r"var\s+_u\s*=\s*'([^']+)'\s*;\s*var\s+_i\s*=\s*'([^']+)'\s*;\s*_setImagesSrc")
         for m in script_pattern.finditer(html):
             url = m.group(1)
@@ -42,7 +50,7 @@ class GoogleShoppingImmersiveParser:
             image_map[img_id] = url
             
         return image_map
-
+    
     @classmethod
     def _extract_main_image(cls, soup: BeautifulSoup, image_map: dict[str, str]) -> str | None:
         """Extracts the primary image for the product."""
@@ -54,6 +62,26 @@ class GoogleShoppingImmersiveParser:
             if url and url.startswith('http') and 'favicon' not in url:
                 return url
         return None
+
+    @classmethod
+    def _extract_all_images(cls, soup: BeautifulSoup, main_image: str | None) -> list[str]:
+        """Extracts all product images and ensures main_image is at the front."""
+        images = []
+        
+        for el in soup.find_all(attrs={'data-item-index': True, 'data-src': True}):
+            src = el.get('data-src')
+            if src and src.startswith('http') and 'favicon' not in src:
+                if src not in images:
+                    images.append(src)
+                    
+        # This block ensures main_image is present in the list at Index 0
+        if main_image:
+            if main_image in images:
+                images.remove(main_image)
+            images.insert(0, main_image)
+            
+        return images
+    
 
     @staticmethod
     def _extract_rating_label(soup: BeautifulSoup) -> str | None:
@@ -75,7 +103,6 @@ class GoogleShoppingImmersiveParser:
 
     @classmethod
     def _extract_description(cls, soup: BeautifulSoup) -> str | None:
-        """Extracts the product description text."""
         desc_container = soup.find(attrs={'data-attrid': 'product_description'})
         if not desc_container:
             return None
@@ -120,69 +147,56 @@ class GoogleShoppingImmersiveParser:
                     specs[key] = value
         return specs
     
-    @classmethod
-    def _extract_injected_soup(cls, soup: BeautifulSoup) -> BeautifulSoup:
-        """
-        Extracts and parses deferred HTML payloads hidden inside script tags.
-        Google hides secondary filters (like Capacity) and extra images here using hex escaping.
-        """
-        injected_html = ""
-        for script in soup.find_all('script'):
-            text = script.get_text()
-            if 'jsl.dh(' in text:
-                # Unescape Google's JavaScript HTML encoding so BeautifulSoup can read it
-                clean_text = text.replace(r'\x3c', '<').replace(r'\x3e', '>').replace(r'\"', '"')
-                injected_html += clean_text
-                
-        return BeautifulSoup(injected_html, 'html.parser')
 
     @classmethod
     def _extract_filters(cls, main_soup: BeautifulSoup, injected_soup: BeautifulSoup) -> list[dict]:
         """Extracts variant filters (e.g. Colour, Capacity) from both standard and injected DOMs."""
         filters = {}
-        seen_pvfs = set()
+        seen_options = set()
         
         # Combine elements from both the visible HTML and the hidden JavaScript HTML
         elements = main_soup.find_all(attrs={'data-pvf': True}) + injected_soup.find_all(attrs={'data-pvf': True})
         
         for el in elements:
-            pvf = el.get('data-pvf')
-            
-            # Prevent duplicate options if they appear in both DOMs
-            if pvf in seen_pvfs:
-                continue
-            seen_pvfs.add(pvf)
-            
-            aria_label = el.get('aria-label', '')
-            
-            # Screen readers get a clean string like: "Capacity filter by 128 GB. Currently unselected."
-            match = re.search(r'^(.+?)\s+filter\s+by\s+(.+?)\.', aria_label)
-            
-            if match:
-                category = match.group(1).strip()
-                option_name = match.group(2).strip()
+            # 1. Safely extract Category Name from the parent list container
+            parent_list = el.find_parent(attrs={'role': 'list', 'aria-label': True})
+            if parent_list:
+                # Cleans "Capacity options" -> "Capacity"
+                category = parent_list.get('aria-label', '').replace(' options', '').strip()
             else:
-                # Fallback if aria-label is missing: find the nearest heading
+                # Absolute fallback: Find nearest heading
                 prev_heading = el.find_previous(attrs={'role': 'heading'})
                 category = "Unknown"
                 if prev_heading:
                     heading_text = prev_heading.get_text(separator=':', strip=True)
                     category = heading_text.split(':')[0].strip()
-                
-                option_name = el.get('data-label') or cls._clean_text(el.get_text(' ', strip=True))
 
-            is_selected = el.get('data-selected') == 'true' or 'Currently selected' in aria_label
+            # 2. Extract Option Name
+            option_name = el.get('data-label') or cls._clean_text(el.get_text(' ', strip=True))
+
+            # 3. Prevent duplicate options if they appear in both DOMs
+            opt_key = (category, option_name)
+            if opt_key in seen_options:
+                continue
+            seen_options.add(opt_key)
+
+            # 4. Check Selected State
+            aria_label = el.get('aria-label', '').lower()
+            is_selected = (
+                el.get('data-selected') == 'true' or 
+                el.get('selected') == 'true' or 
+                'currently selected' in aria_label
+            )
 
             if category not in filters:
                 filters[category] = []
 
             opt = {
                 'name': option_name,
-                'value': pvf,
                 'selected': is_selected
             }
 
-            # Capture swatch images if available (commonly used on colors)
+            # 5. Capture swatch images if available (commonly used on colors)
             img_url = el.get('data-img')
             if img_url:
                 opt['image'] = img_url
@@ -190,7 +204,7 @@ class GoogleShoppingImmersiveParser:
             filters[category].append(opt)
 
         return [{'category': k, 'options': v} for k, v in filters.items()]
-
+    
     @classmethod
     def _extract_current_price(cls, card: BeautifulSoup) -> dict[str, str | None]:
         price_container = card.find(attrs={'data-crcy': True})
@@ -342,27 +356,28 @@ class GoogleShoppingImmersiveParser:
         return competitors
 
     @classmethod
-    def parse_product(cls, soup: BeautifulSoup, url: str, fetch_url: str, html: str | None = None) -> dict:
+    def parse_product(cls, soup: BeautifulSoup, url: str, final_url: str, html: str | None = None) -> dict:
         raw_html = html or str(soup)
         image_map = cls._extract_image_map(raw_html)
-        
-        # Unpack the hidden Javascript HTML
         injected_soup = cls._extract_injected_soup(soup)
+        
+        main_image = cls._extract_main_image(soup, image_map)
         
         rating_label = cls._extract_rating_label(soup)
         buying_options = cls._extract_sellers(soup, image_map)
+        filters = cls._extract_filters(soup, injected_soup)
 
         return {
             'input_url': url,
-            'fetch_url': fetch_url,
+            'final_url': final_url,
             'title': cls._extract_title(soup),
             'description': cls._extract_description(soup),
-            'main_image': cls._extract_main_image(soup, image_map),
+            'images': cls._extract_all_images(soup, main_image),
             'rating': cls._extract_rating(rating_label),
             'review_count': cls._extract_review_count(rating_label),
             'features': cls._extract_specs(soup),
-            # Pass BOTH soups into the filter extractor
-            'filters': cls._extract_filters(soup, injected_soup), 
+            'filters': filters, 
             'buying_options': buying_options,
             'competing_products': cls._extract_competing_products(soup),
         }
+    

@@ -16,6 +16,10 @@ Given a Google Shopping product URL (the kind with a `prds=` query parameter), t
 {
   "input_url": "https://www.google.com/search?prds=eto:...&q=iphone+16",
   "fetch_url": "https://www.google.com/search?prds=eto:...&ibp=oshop&hl=en&gl=in&udm=28",
+  "all_images": [
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR...",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS..."
+  ],
   "title": "Apple iPhone 16 256GB",
   "rating": 4.6,
   "review_count": 11000,
@@ -73,6 +77,7 @@ A single dataset item per run containing:
 |---|---|---|
 | `input_url` | string | The URL provided as input |
 | `fetch_url` | string | The full URL fetched (with injected `ibp`, `hl`, `gl`, `udm` params) |
+| `all_images` | array[string] | List of product image URLs, with the primary image first |
 | `title` | string | Product name |
 | `rating` | number \| null | Aggregate rating out of 5 |
 | `review_count` | integer \| null | Total number of reviews |
@@ -95,13 +100,25 @@ A single dataset item per run containing:
 | `status` | string \| null | Stock status e.g. `In stock` |
 | `delivery` | string \| null | Delivery info e.g. `Free delivery by Tomorrow` |
 | `offer_rating` | number \| null | Seller-level rating if shown |
+| `seller_logo` | string \| null | Seller logo image URL if available |
 
 ## Usage notes
 
 - `rating` and `review_count` are `null` when Google does not show them for the product
 - `features` is an empty object `{}` when no specification attributes are present
+- `all_images` is an array of product image URLs; the first entry is the primary image when present
 - If Google returns a sparse/static page (no buying options or features), the raw HTML is saved as the `sparse-response.html` key–value store entry for debugging
 - Results are localized to the `country` you provide — prices, sellers, and availability will reflect that market
+
+## Local parser testing
+
+A lightweight local harness is available for debugging HTML files.
+
+```bash
+python test.py p.html
+```
+
+This loads `p.html`, parses it with `GoogleShoppingImmersiveParser`, and prints the JSON output.
 
 ## Project structure
 
