@@ -51,15 +51,25 @@ class GoogleShoppingImmersiveParser:
             
         return image_map
     
+    @staticmethod
+    def _is_valid_product_image(url: str | None) -> bool:
+        """Only allows URLs that match known Google Shopping image patterns."""
+        if not url or not url.startswith('http'):
+            return False
+        
+        return 'shopping?q=tbn:' in url or 'encrypted-tbn' in url
+    
     @classmethod
     def _extract_main_image(cls, soup: BeautifulSoup, image_map: dict[str, str]) -> str | None:
         """Extracts the primary image for the product."""
         meta_img = soup.find('meta', property='og:image')
         if meta_img and meta_img.get('content'):
-            return meta_img.get('content')
-            
+            img_url = meta_img.get('content')
+            if cls._is_valid_product_image(img_url):
+                return img_url
+                
         for _, url in image_map.items():
-            if url and url.startswith('http') and 'favicon' not in url:
+            if cls._is_valid_product_image(url):
                 return url
         return None
 
@@ -70,12 +80,12 @@ class GoogleShoppingImmersiveParser:
         
         for el in soup.find_all(attrs={'data-item-index': True, 'data-src': True}):
             src = el.get('data-src')
-            if src and src.startswith('http') and 'favicon' not in src:
+            if cls._is_valid_product_image(src):
                 if src not in images:
                     images.append(src)
                     
         # This block ensures main_image is present in the list at Index 0
-        if main_image:
+        if main_image and cls._is_valid_product_image(main_image):
             if main_image in images:
                 images.remove(main_image)
             images.insert(0, main_image)
