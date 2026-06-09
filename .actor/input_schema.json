@@ -8,6 +8,7 @@
             "title": "Search Query",
             "type": "string",
             "description": "Google Shopping search query (e.g. wireless headphones)",
+            "default": "wireless headphones",
             "editor": "textfield"
         },
         "country": {
