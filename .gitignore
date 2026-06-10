@@ -25,3 +25,4 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+/playwright_user_data/
