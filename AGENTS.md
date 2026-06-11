@@ -34,8 +34,8 @@ src/
   actor.json                    # Actor metadata
   input_schema.json             # Defines: url (required), country (default "in")
   dataset_schema.json           # Output schema
-Dockerfile                      # Python 3.11, installs requirements.txt
-requirements.txt                # apify, beautifulsoup4[lxml], aiohttp, httpx, fastapi, uvicorn
+Dockerfile                      # Python 3.14, installs requirements.txt
+requirements.txt                # apify, beautifulsoup4[lxml], aiohttp
 ```
 
 ### Data flow
@@ -52,7 +52,7 @@ Actor.get_input()
   → Actor.push_data(product)
 ```
 
-For local debugging, `test.py` can parse a saved `p.html` file and print the parser output without running the actor.
+For local debugging, use `python -m src.parser` with a saved `p.html` file to print parser output without running the actor.
 
 ---
 
@@ -163,7 +163,7 @@ apify run
 python main.py
 
 # Parse a saved HTML sample for parser validation
-python test.py p.html
+python -m src.parser p.html
 ```
 
 ---

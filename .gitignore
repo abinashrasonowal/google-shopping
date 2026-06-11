@@ -26,3 +26,5 @@ build/
 dist/
 *.egg-info/
 test.py
+
+playwright_user_data/
