@@ -17,6 +17,13 @@
             "description": "Google country code for localized results (e.g. us, gb, in)",
             "default": "in",
             "editor": "textfield"
+        },
+        "more_shops_click": {
+            "title": "More Shops Click",
+            "type": "integer",
+            "description": "Number of additional shops to load via breathtaking_turtle/google-shopping-more-offers actor. Set to 0 to skip.",
+            "default": 2,
+            "editor": "number"
         }
     },
     "required": []
