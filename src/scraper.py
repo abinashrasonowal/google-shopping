@@ -128,78 +128,11 @@ async def run_immersive(http_client: HttpClient, url: str, country: str) -> dict
     return product
 
 
-async def _call_more_offers(
-    url: str, country: str, more_shops_click: int,
-) -> list[dict]:
-    """Call breathtaking_turtle/google-shopping-more-offers and return its dataset items."""
-    call_input = {
-        'url': url,
-        'country': country,
-        'more_shops_click': more_shops_click,
-    }
-    Actor.log.info('Calling breathtaking_turtle/google-shopping-more-offers with input=%s', call_input)
-    run = await Actor.call('breathtaking_turtle/google-shopping-more-offers', call_input)
-    if not run:
-        Actor.log.warning('more-offers actor returned nothing')
-        return []
-
-    dataset_id = run.default_dataset_id if hasattr(run, 'default_dataset_id') else run.get('defaultDatasetId')
-    if not dataset_id:
-        Actor.log.warning('more-offers actor returned no dataset ID')
-        return []
-
-    dataset = await Actor.open_dataset(id=dataset_id)
-    if hasattr(dataset, 'list_items'):
-        page = await dataset.list_items()
-        items = page.items if hasattr(page, 'items') else page
-    elif hasattr(dataset, 'get_data'):
-        page = await dataset.get_data()
-        items = page.items if hasattr(page, 'items') else page
-    else:
-        items = await dataset.get_items()
-
-    result = list(items) if items else []
-    Actor.log.info('Received %d items from more-offers actor', len(result))
-    return result
-
-
-def _normalize_offer(offer: dict) -> dict:
-    """Normalize more-offers actor fields to our buying_options schema."""
-    return {
-        'merchant': offer.get('store'),
-        'merchant_id': offer.get('merchantId'),
-        'offer_id': offer.get('offerId'),
-        'title': offer.get('title'),
-        'price': offer.get('currentPrice'),
-        'currency': offer.get('currency'),
-        'old_price': offer.get('oldPrice'),
-        'target_url': offer.get('url'),
-        'status': offer.get('status'),
-        'delivery': offer.get('delivery'),
-        'offer_rating': offer.get('rating'),
-        'seller_logo': offer.get('sellerLogo'),
-    }
-
-
-def _merge_offers(product: dict, additional_items: list[dict]) -> dict:
-    """Merge additional offers into product's buying_options, deduplicating by offer_id."""
-    existing_ids = {o.get('offer_id') for o in (product.get('buying_options') or [])}
-    for item in additional_items:
-        for raw_offer in (item.get('buyingOptions') or []):
-            offer = _normalize_offer(raw_offer)
-            oid = offer.get('offer_id')
-            if oid and oid not in existing_ids:
-                product.setdefault('buying_options', []).append(offer)
-                existing_ids.add(oid)
-    return product
-
-
 async def main() -> None:
     async with Actor:
         actor_input = await Actor.get_input() or {}
         url = actor_input.get('url')
         country = actor_input.get('country', 'in')
-        more_shops_click = int(actor_input.get('more_shops_click', 0))
 
         validate_input(url, country)
 
@@ -207,15 +140,6 @@ async def main() -> None:
         http_client = ProxyHttpClient(proxy_url)
 
         product = await run_immersive(http_client, url, country)
-
-        if product and more_shops_click > 0:
-            try:
-                additional = await _call_more_offers(url, country, more_shops_click)
-                if additional:
-                    product = _merge_offers(product, additional)
-            except Exception:
-                Actor.log.exception('Failed to fetch additional offers from more-offers actor')
-
         if product:
             await Actor.push_data(product)
             Actor.log.info('Pushed immersive product details to dataset')
