@@ -355,16 +355,6 @@ class GoogleShoppingImmersiveParser:
                 seen.add(seller_key)
         return sellers
 
-    @staticmethod
-    def _extract_competing_products(soup: BeautifulSoup) -> list[dict[str, str | None]]:
-        competitors = []
-        for el in soup.find_all(attrs={'data-attrid': 'apg-product-result'}):
-            competitors.append({
-                'product_id': el.get('data-pid'),
-                'text': el.get_text(separator=' | ', strip=True),
-            })
-        return competitors
-
     @classmethod
     def parse_product(cls, soup: BeautifulSoup, url: str, final_url: str, html: str | None = None) -> dict:
         raw_html = html or str(soup)
@@ -387,7 +377,6 @@ class GoogleShoppingImmersiveParser:
             'review_count': cls._extract_review_count(rating_label),
             'features': cls._extract_specs(soup),
             'filters': filters, 
-            'buying_options': buying_options,
-            'competing_products': cls._extract_competing_products(soup),
+            'buying_options': buying_options
         }
     
