@@ -1,0 +1,17 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "input_url": { "title": "Input URL", "type": "string", "description": "The retailer product URL provided as input" },
+    "final_url": { "title": "Final URL", "type": "string", "description": "Final URL after redirects when fetching the input page" },
+    "store": { "title": "Store", "type": "string", "nullable": true, "description": "Detected store name" },
+    "title": { "title": "Title", "type": "string", "nullable": true, "description": "Product title from page meta" },
+    "canonical_url": { "title": "Canonical URL", "type": "string", "nullable": true, "description": "Canonical product URL from the page" },
+    "slug": { "title": "Slug", "type": "string", "nullable": true, "description": "Product slug derived from the URL" },
+    "query": { "title": "Query", "type": "string", "description": "Cleaned search query used (<= 8 words)" },
+    "results_considered": { "title": "Results considered", "type": "integer", "description": "Number of search results resolved in parallel" },
+    "matched": { "title": "Matched", "type": "boolean", "description": "Whether a matching offer was found" },
+    "match_reason": { "title": "Match reason", "type": "string", "nullable": true, "description": "How the offer matched: canonical_url or slug" },
+    "matched_offer": { "title": "Matched offer", "type": "object", "nullable": true, "description": "The matching buying option" },
+    "product": { "title": "Product", "type": "object", "nullable": true, "description": "The immersive product that contained the matching offer" }
+  }
+}

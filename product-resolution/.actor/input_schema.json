@@ -1,0 +1,31 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "Product Resolution Engine",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "url": {
+            "title": "Product URL",
+            "type": "string",
+            "description": "A retailer product page URL to resolve to its Google Shopping offer",
+            "editor": "textfield",
+            "prefill": "https://www.flipkart.com/apple-iphone-16-ultramarine-128-gb/p/itm5cd9b327d7a8b"
+        },
+        "country": {
+            "title": "Country Code",
+            "type": "string",
+            "description": "Google country code for localized results (e.g. us, gb, in)",
+            "default": "in",
+            "editor": "textfield"
+        },
+        "maxResults": {
+            "title": "Max search results to resolve",
+            "type": "integer",
+            "description": "How many top search results to fetch immersive pages for, in parallel",
+            "default": 12,
+            "minimum": 1,
+            "maximum": 40
+        }
+    },
+    "required": ["url"]
+}

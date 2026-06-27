@@ -6,6 +6,7 @@ Two independent Apify actors for scraping Google Shopping, written in JavaScript
 |---|---|---|---|
 | [`shopping/`](shopping/) | Search-results scraper | `query` + `country` | List of ~40 product listings |
 | [`immersive/`](immersive/) | Product-detail scraper | product `url` (with `prds=`) + `country` | Single product: specs, sellers, filters |
+| [`product-resolution/`](product-resolution/) | Resolution engine | retailer `url` + `country` | Matching Google Shopping offer for that product |
 
 Both share the same shape:
 
@@ -37,5 +38,6 @@ The `apify` CLI uses the build context of the current directory (its `.actor/`, 
 
 - **shopping** uses `GOOGLE_SERP` proxies.
 - **immersive** uses `RESIDENTIAL` proxies.
+- **product-resolution** uses both `RESIDENTIAL` (meta + immersive) and `GOOGLE_SERP` (search).
 
 Make sure the relevant proxy access is enabled on your Apify account.
