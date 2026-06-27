@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Product Resolution Engine",
+    "version": "1.0.0",
+    "description": "Resolves a retailer product URL to its matching Google Shopping offer."
+  },
+  "paths": {
+    "/run-sync-get-dataset-items": {
+      "post": {
+        "operationId": "runResolver",
+        "summary": "Resolve a product URL to its Google Shopping offer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "description": "Retailer product page URL" },
+                  "country": { "type": "string", "description": "2-letter country code e.g. in, us, gb", "default": "in" },
+                  "maxResults": { "type": "integer", "description": "Top search results to resolve in parallel", "default": 12 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolution result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "input_url": { "type": "string" },
+                      "final_url": { "type": "string" },
+                      "store": { "type": "string", "nullable": true },
+                      "title": { "type": "string", "nullable": true },
+                      "canonical_url": { "type": "string", "nullable": true },
+                      "slug": { "type": "string", "nullable": true },
+                      "query": { "type": "string" },
+                      "results_considered": { "type": "integer" },
+                      "matched": { "type": "boolean" },
+                      "match_reason": { "type": "string", "nullable": true },
+                      "matched_offer": { "type": "object", "nullable": true },
+                      "product": { "type": "object", "nullable": true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "actorSpecification": 1,
+  "views": {
+    "overview": {
+      "title": "Resolution",
+      "transformation": {
+        "fields": ["store", "title", "query", "matched", "match_reason", "matched_offer", "canonical_url"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "store": { "label": "Store" },
+          "title": { "label": "Title" },
+          "query": { "label": "Query" },
+          "matched": { "label": "Matched" },
+          "match_reason": { "label": "Reason" },
+          "canonical_url": { "label": "Canonical URL", "format": "link" }
+        }
+      }
+    }
+  }
+}

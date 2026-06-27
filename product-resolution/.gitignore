@@ -1,0 +1,16 @@
+node_modules/
+dist/
+
+.env
+.env.*
+!.env.example
+
+.idea/
+.vscode/
+
+.DS_Store
+Thumbs.db
+
+apify_storage/
+storage/
+crawlee_storage/
