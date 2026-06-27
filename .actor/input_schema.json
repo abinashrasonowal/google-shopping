@@ -4,7 +4,7 @@
     "type": "object",
     "schemaVersion": 1,
     "properties": {
-        "q": {
+        "query": {
             "title": "Search Query",
             "type": "string",
             "description": "Google Shopping search query (e.g. wireless headphones)",
@@ -19,5 +19,5 @@
             "editor": "textfield"
         }
     },
-    "required": ["q"]
+    "required": ["query"]
 }

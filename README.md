@@ -24,13 +24,13 @@ Searches Google Shopping for any query and returns structured product data direc
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `q` | string | yes | — | Search query e.g. `wireless headphones` |
+| `query` | string | yes | — | Search query e.g. `wireless headphones` |
 | `country` | string | | `in` | 2-letter country code e.g. `us`, `gb`, `de` |
 
 **Example input:**
 ```json
 {
-  "q": "iphone 16",
+  "query": "iphone 16",
   "country": "in"
 }
 ```

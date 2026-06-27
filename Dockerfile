@@ -1,33 +1,28 @@
 # First, specify the base Docker image.
 # You can see the Docker images from Apify at https://hub.docker.com/r/apify/.
 # You can also use any other image from Docker Hub.
-FROM apify/actor-python:3.14
+FROM apify/actor-node:20
 
-USER myuser
+# Copy just package.json and package-lock.json
+# to speed up the build using Docker layer cache.
+COPY package*.json ./
 
-# Second, copy just requirements.txt into the Actor image,
-# since it should be the only file that affects the dependency install in the next step,
-# in order to speed up the build
-COPY --chown=myuser:myuser requirements.txt ./
-
-# Install the packages specified in requirements.txt,
-# Print the installed Python version, pip version
-# and all installed packages with their versions for debugging
-RUN echo "Python version:" \
- && python --version \
- && echo "Pip version:" \
- && pip --version \
- && echo "Installing dependencies:" \
- && pip install -r requirements.txt \
- && echo "All installed Python packages:" \
- && pip freeze
+# Install NPM packages, skip optional and development dependencies to
+# keep the image small. Avoid logging too much and print the dependency
+# tree for debugging
+RUN npm --quiet set progress=false \
+ && npm install --omit=dev --omit=optional \
+ && echo "Installed NPM packages:" \
+ && (npm list --omit=dev --all || true) \
+ && echo "Node.js version:" \
+ && node --version \
+ && echo "NPM version:" \
+ && npm --version
 
 # Next, copy the remaining files and directories with the source code.
-# Since we do this after installing the dependencies, quick build will be really fast
+# Since we do this after NPM install, quick build will be really fast
 # for most source file changes.
-COPY --chown=myuser:myuser . ./
+COPY . ./
 
-# Use compileall to ensure the runnability of the Actor Python code.
-RUN python -m compileall -q src/ main.py
-
-CMD python main.py
+# Run the image.
+CMD npm start --silent

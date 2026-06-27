@@ -16,9 +16,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["q"],
+                "required": ["query"],
                 "properties": {
-                  "q": {
+                  "query": {
                     "type": "string",
                     "description": "Search query e.g. wireless headphones"
                   },
