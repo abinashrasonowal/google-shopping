@@ -1,0 +1,18 @@
+{
+    "name": "@gs/client",
+    "version": "0.0.1",
+    "type": "module",
+    "private": true,
+    "description": "Base module: Apify-proxy HTTP client + shared block detection, used by all actors.",
+    "main": "index.js",
+    "exports": {
+        ".": "./index.js",
+        "./proxy_http_client.js": "./proxy_http_client.js",
+        "./is_blocked.js": "./is_blocked.js"
+    },
+    "dependencies": {
+        "apify": "^3.2.6",
+        "cheerio": "^1.0.0",
+        "got-scraping": "^4.0.6"
+    }
+}
