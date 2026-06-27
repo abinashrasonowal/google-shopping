@@ -309,11 +309,62 @@ function extractOfferDelivery($, cardNode) {
     return cleanText(deliveryEl.attr('aria-label')) || cleanText(nodeText(deliveryEl.get(0), ' '));
 }
 
-function extractSellers($, imageMap) {
+// New immersive layout: offers are listitems inside the offers grid.
+function extractSellersNew($, $cards) {
     const sellers = [];
     const seen = new Set();
 
-    const offersGrid = $('[data-attrid="organic_offers_grid"]').first();
+    $cards.each((_, cardNode) => {
+        const $card = $(cardNode);
+
+        const merchant = $card.find('[data-report-feedback-about-context]').first().attr('data-report-feedback-about-context')
+            || cleanText(nodeText($card.find('.gUf0b').first().get(0), ' '));
+
+        const linkEl = $card.find('a[href^="http"]').first();
+        const price = extractCurrentPrice($, cardNode);
+        const oldPrice = extractOldPrice($, cardNode);
+
+        let offerRating = null;
+        const ratingEl = $card.find('.NFq8Ad').first();
+        if (ratingEl.length) {
+            const m = ratingEl.text().match(/([\d.]+)/);
+            if (m) offerRating = parseFloat(m[1]);
+        }
+
+        let sellerLogo = null;
+        const src = $card.find('img').first().attr('src') || '';
+        if (src.startsWith('http') && !src.includes('data:image')) sellerLogo = src;
+
+        const seller = {
+            merchant: merchant || null,
+            merchant_id: null,
+            offer_id: $card.attr('data-sori-id') || null,
+            title: extractOfferTitle($, cardNode),
+            price: price.price,
+            currency: price.currency,
+            old_price: oldPrice.old_price,
+            target_url: linkEl.length ? linkEl.attr('href') : null,
+            status: extractOfferStatus($, cardNode),
+            delivery: extractOfferDelivery($, cardNode),
+            offer_rating: offerRating,
+            seller_logo: sellerLogo,
+        };
+
+        const key = `${seller.merchant} ${seller.target_url}`;
+        if (!seen.has(key)) {
+            sellers.push(seller);
+            seen.add(key);
+        }
+    });
+
+    return sellers;
+}
+
+// Old immersive layout: offers carry data-merchant-name / data-target-url.
+function extractSellersOld($, imageMap, offersGrid) {
+    const sellers = [];
+    const seen = new Set();
+
     const $merchants = offersGrid.length
         ? offersGrid.find('[data-merchant-name]')
         : $('[data-merchant-name]');
@@ -367,6 +418,14 @@ function extractSellers($, imageMap) {
     });
 
     return sellers;
+}
+
+function extractSellers($, imageMap) {
+    const offersGrid = $('[data-attrid="organic_offers_grid"]').first();
+    // New layout: offer cards are listitems (jsname="uwagwf") inside the grid.
+    const $newCards = offersGrid.length ? offersGrid.find('[jsname="uwagwf"][role="listitem"]') : $();
+    if ($newCards.length) return extractSellersNew($, $newCards);
+    return extractSellersOld($, imageMap, offersGrid);
 }
 
 /**
