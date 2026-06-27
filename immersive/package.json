@@ -1,0 +1,25 @@
+{
+    "name": "@gs/immersive",
+    "version": "0.0.1",
+    "type": "module",
+    "description": "Scrapes product details from a Google Shopping immersive URL. Also exports parseProduct for reuse.",
+    "engines": {
+        "node": ">=18"
+    },
+    "main": "src/immersive.js",
+    "exports": {
+        ".": "./src/immersive.js"
+    },
+    "scripts": {
+        "start": "node dist/main.js",
+        "dev": "node src/main.js"
+    },
+    "dependencies": {
+        "apify": "^3.2.6",
+        "cheerio": "^1.0.0",
+        "got-scraping": "^4.0.6"
+    },
+    "devDependencies": {
+        "@gs/client": "workspace:*"
+    }
+}

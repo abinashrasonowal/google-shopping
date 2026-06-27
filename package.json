@@ -1,18 +1,24 @@
 {
-    "name": "google-shopping-immersive",
+    "name": "google-shopping-monorepo",
     "version": "0.0.1",
     "type": "module",
-    "description": "Scrapes basic product details from a Google Shopping immersive product URL containing prds.",
-    "engines": {
-        "node": ">=18"
-    },
-    "main": "src/main.js",
+    "private": true,
+    "description": "Monorepo of independently deployable Google Shopping Apify actors sharing @gs/shared, bundled per-actor with esbuild.",
     "scripts": {
-        "start": "node src/main.js"
+        "build": "node scripts/build.mjs",
+        "build:shopping": "node scripts/build.mjs shopping",
+        "build:immersive": "node scripts/build.mjs immersive",
+        "build:resolution": "node scripts/build.mjs product-resolution",
+        "deploy:shopping": "node scripts/build.mjs shopping && cd shopping && apify push",
+        "deploy:immersive": "node scripts/build.mjs immersive && cd immersive && apify push",
+        "deploy:resolution": "node scripts/build.mjs product-resolution && cd product-resolution && apify push"
     },
-    "dependencies": {
-        "apify": "^3.2.6",
-        "cheerio": "^1.0.0",
-        "got-scraping": "^4.0.6"
+    "devDependencies": {
+        "esbuild": "^0.25.0"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "esbuild"
+        ]
     }
 }

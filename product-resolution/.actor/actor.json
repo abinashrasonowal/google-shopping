@@ -1,0 +1,11 @@
+{
+    "$schema": "https://apify.com/schemas/v1/actor.ide.json",
+    "actorSpecification": 1,
+    "name": "product-resolution-engine",
+    "title": "Product Resolution Engine",
+    "description": "Resolves a retailer product URL to its matching Google Shopping offer via meta-driven search and immersive matching.",
+    "version": "0.0",
+    "buildTag": "latest",
+    "input": "./input_schema.json",
+    "dockerfile": "../Dockerfile"
+}
