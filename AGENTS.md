@@ -21,104 +21,87 @@ You are currently on the **`immersive`** branch unless told otherwise. Do not mi
 ## Architecture (`immersive` branch)
 
 ```
-main.py                         # Entry: asyncio.run(main()) → src/scraper.main()
 src/
-  scraper.py                    # Actor entrypoint, URL building, HTTP fetch, block detection
-  parser.py                     # Pure HTML parsing — no network, no Apify calls
-  client/
-    http_client.py              # Abstract base: async fetch(url) -> str
-    proxy_http_client.py        # Production: aiohttp + Apify residential proxy
-    local_http_client.py        # Dev/testing: aiohttp without proxy
-    proxy.py                    # Helper: Actor.create_proxy_configuration() → proxy URL
+  main.js                       # Entry: Actor lifecycle, input validation, URL building, fetch + block detection
+  parser.js                     # Pure HTML parsing (cheerio) — no network, no Apify calls
+  proxy_http_client.js          # The ONLY HTTP client: got-scraping + Apify residential proxy, with retries
 .actor/
   actor.json                    # Actor metadata
   input_schema.json             # Defines: url (required), country (default "in")
   dataset_schema.json           # Output schema
-Dockerfile                      # Python 3.14, installs requirements.txt
-requirements.txt                # apify, beautifulsoup4[lxml], aiohttp
+Dockerfile                      # apify/actor-node:20, installs package.json
+package.json                    # apify, cheerio, got-scraping (ESM, "type": "module")
 ```
 
 ### Data flow
 ```
-Actor.get_input()
+Actor.getInput()
   → url, country
-  → get_proxy_url(groups=["RESIDENTIAL"], country_code=country.upper())
-  → ProxyHttpClient(proxy_url)
-  → GoogleShoppingImmersiveScraper.build_immersive_url()   # injects ibp, hl, gl, udm params
-  → http_client.fetch(url)                                  # aiohttp GET via proxy
-  → BeautifulSoup(html)
-  → is_blocked(soup)?  → log warning, return None
-  → GoogleShoppingImmersiveParser.parse_product(soup, url, fetch_url)
-  → Actor.push_data(product)
+  → validateInput(url, country)
+  → Actor.createProxyConfiguration({ groups: ["RESIDENTIAL"], countryCode: country.toUpperCase() })
+  → new ProxyHttpClient(proxyUrl)
+  → buildImmersiveUrl(url, country)        # injects ibp, hl, gl, udm params
+  → httpClient.fetch(url)                  # got-scraping GET via proxy → [html, finalUrl]
+  → isBlocked(html)?  → log warning, return null
+  → parseProduct(html, url, finalUrl)      # cheerio
+  → Actor.pushData(product)
 ```
 
-For local debugging, use `python -m src.parser` with a saved `p.html` file to print parser output without running the actor.
+This is a JavaScript (Node.js, ESM) Apify actor. Run locally with `apify run` or `npm start`.
 
 ---
 
 ## Key classes & functions
 
-### `src/scraper.py`
-- **`GoogleShoppingImmersiveScraper`** — holds `url`, `country`, `http_client`
-  - `build_immersive_url()` → appends `ibp=oshop`, `hl=en`, `gl=<country>`, `udm=28` to the input URL
-  - `fetch_html()` → calls `http_client.fetch(built_url)`
-  - `is_blocked(soup)` → checks for CAPTCHA / "unusual traffic" signals
-- **`run_immersive(http_client, url, country)`** → orchestrates fetch + parse, saves `sparse-response.html` if result is empty
-- **`main()`** → Apify Actor entrypoint
+### `src/main.js`
+- **`validateInput(url, country)`** → throws on missing/invalid url, non-https, non-Google domain, missing `prds`, or bad country code
+- **`buildImmersiveUrl(url, country)`** → adds `ibp=oshop`, `hl=en`, `gl=<country>`, `udm=28` to the input URL (only if absent)
+- **`runImmersive(httpClient, url, country)`** → orchestrates fetch + parse, saves `sparse-response.html` if result is empty
+- top-level `Actor.init()` / `Actor.exit()` lifecycle → Apify actor entrypoint
 
-### `src/parser.py` — `GoogleShoppingImmersiveParser` (all `@staticmethod` / `@classmethod`)
-- `parse_product(soup, url, fetch_url)` → returns the full output dict
-- `_extract_title(soup)` → tries `data-attrid="product_title"`, falls back to `<title>`
-- `_extract_specs(soup)` → finds all `data-attrid="product_attributes_facet"` elements → `{key: value}` dict
-- `_extract_sellers(soup)` → finds all `data-merchant-name` elements → list of seller dicts
-- `_extract_current_price(card)` → tries `data-crcy` container + `aria-label` starting with "Current price:"
-- `_extract_old_price(card)` → `aria-label` starting with "Old price was" or "Maximum retail price:"
-- `_extract_competing_products(soup)` → `data-attrid="apg-product-result"` elements
+### `src/parser.js` — exported functions
+- `parseProduct(html, url, finalUrl)` → returns the full output object (loads cheerio internally)
+- `isBlocked(html)` → checks for CAPTCHA / "unusual traffic" signals
+- internal helpers: title (`data-attrid="product_title"` → `<title>`), specs (`data-attrid="product_attributes_facet"`), sellers (`data-merchant-name`), current price (`data-crcy` + `aria-label` "Current price:"), old price (`aria-label` "Old price was"/"Maximum retail price:"), filters (`data-pvf` across visible + injected DOM)
 
-### `src/client/`
-- **`HttpClient`** (ABC) — one method: `async fetch(url, **kwargs) -> str`
-- **`ProxyHttpClient`** — production; needs `proxy_url` from `get_proxy_url()`; sends full browser-like headers
-- **`LocalHttpClient`** — same headers, no proxy; use for local dev/testing
+### `src/proxy_http_client.js`
+- **`ProxyHttpClient`** — the only HTTP client; constructed with a `proxyUrl`; sends full browser-like headers via `got-scraping`; `fetch(url)` returns `[html, finalUrl]` and retries up to 3× with exponential backoff
 
 ---
 
 ## Output schema (single item pushed to dataset)
 
-```python
+```ts
 {
-    "input_url":           str,           # URL from actor input
-    "final_url":           str,           # Normalized Google immersive URL fetched
-    "title":               str | None,
-    "description":         str | None,
-    "images":              list[str],     # Product image URLs, primary image first
-    "rating":              float | None,  # e.g. 4.6
-    "review_count":        int | None,    # e.g. 11000 (handles "11k" → 11000)
-    "features":            dict[str, str],# e.g. {"Storage": "256 GB", "Color": "Black"}
+    "input_url":           string,        // URL from actor input
+    "final_url":           string,        // Normalized Google immersive URL fetched
+    "title":               string | null,
+    "description":         string | null,
+    "images":              string[],      // Product image URLs, primary image first
+    "rating":              number | null, // e.g. 4.6
+    "review_count":        number | null, // e.g. 11000 (handles "11k" → 11000)
+    "features":            Record<string, string>, // e.g. {"Storage": "256 GB", "Color": "Black"}
     "filters": [{
-        "category":        str,           # e.g. "Colour", "Capacity"
+        "category":        string,        // e.g. "Colour", "Capacity"
         "options": [{
-            "name":        str,
-            "selected":    bool,
-            "image":       str | None,    # swatch image URL for colour variants
+            "name":        string,
+            "selected":    boolean,
+            "image":       string | null, // swatch image URL for colour variants (omitted if absent)
         }],
     }],
     "buying_options": [{
-        "merchant":        str | None,
-        "merchant_id":     str | None,
-        "offer_id":        str | None,
-        "title":           str | None,
-        "price":           str | None,    # e.g. "₹79,900"
-        "currency":        str | None,    # ISO 4217 e.g. "INR"
-        "old_price":       str | None,
-        "target_url":      str | None,
-        "status":          str | None,    # e.g. "In stock"
-        "delivery":        str | None,
-        "offer_rating":    float | None,
-        "seller_logo":     str | None,
-    }],
-    "competing_products": [{
-        "product_id":      str | None,
-        "text":            str,
+        "merchant":        string | null,
+        "merchant_id":     string | null,
+        "offer_id":        string | null,
+        "title":           string | null,
+        "price":           string | null, // e.g. "₹79,900"
+        "currency":        string | null, // ISO 4217 e.g. "INR"
+        "old_price":       string | null,
+        "target_url":      string | null,
+        "status":          string | null, // e.g. "In stock"
+        "delivery":        string | null,
+        "offer_rating":    number | null,
+        "seller_logo":     string | null,
     }],
 }
 ```
@@ -127,10 +110,10 @@ For local debugging, use `python -m src.parser` with a saved `p.html` file to pr
 
 ## Input schema
 
-```python
+```ts
 {
-    "url":     str,          # Required. Google Shopping URL with prds= param
-    "country": str,          # Optional. Default "in". 2-letter ISO e.g. "us", "gb"
+    "url":     string,       // Required. Google Shopping URL with prds= param
+    "country": string,       // Optional. Default "in". 2-letter ISO e.g. "us", "gb"
 }
 ```
 
@@ -138,15 +121,15 @@ For local debugging, use `python -m src.parser` with a saved `p.html` file to pr
 
 ## Gotchas & conventions
 
-1. **`prds` param is required** — `build_immersive_url()` raises `ValueError` if missing from the input URL
+1. **`prds` param is required** — `validateInput()` throws if missing from the input URL
 2. **Block detection** — checks for `"before you continue"`, `"unusual traffic"`, `"verify you're human"`, `"g-recaptcha"` in page text
 3. **Sparse response** — if parsed product has no `features` AND no `buying_options`, the raw HTML is saved to the KV store as `sparse-response.html` for debugging
-4. **Currency extraction** — `_extract_currency()` first checks symbol map (`₹→INR`, `$→USD`, `€→EUR`, `£→GBP`, `¥→JPY`), then regex for 3-letter uppercase ISO code
+4. **Currency extraction** — `extractCurrency()` first checks symbol map (`₹→INR`, `$→USD`, `€→EUR`, `£→GBP`, `¥→JPY`), then regex for 3-letter uppercase ISO code
 5. **Review count parsing** — handles `"11k"` → `11000` and `"1.2m"` → `1200000`
-6. **`HttpClient` interface** — always program to the abstract `HttpClient`; swap `ProxyHttpClient` ↔ `LocalHttpClient` for prod vs local
-7. **No Playwright / browser** — this actor is HTTP-only (aiohttp); do not add Playwright here
+6. **Single HTTP client** — there is exactly one client, `ProxyHttpClient` (`src/proxy_http_client.js`); there is no abstract base or local/no-proxy client
+7. **No Playwright / browser** — this actor is HTTP-only (got-scraping); do not add Playwright here
 8. **Proxy group** — must use `RESIDENTIAL` group; `DATACENTER` group typically gets blocked by Google
-9. **Retry logic** — `ProxyHttpClient.fetch()` retries up to 3 times with exponential backoff (1s, 2s, 4s) on `ClientHttpProxyError` and `ClientResponseError`; handles transient `UPSTREAM502` / `590` errors from the residential proxy tier
+9. **Retry logic** — `ProxyHttpClient.fetch()` retries up to 3 times with exponential backoff (1s, 2s, 4s) on any request error; handles transient `UPSTREAM502` / `590` errors from the residential proxy tier
 
 ---
 
@@ -154,16 +137,13 @@ For local debugging, use `python -m src.parser` with a saved `p.html` file to pr
 
 ```bash
 # Install deps
-pip install -r requirements.txt
+npm install
 
 # Run the actor locally with Apify input
 apify run
 
-# Run without proxy (local dev) — swap ProxyHttpClient → LocalHttpClient in scraper.py temporarily
-python main.py
-
-# Parse a saved HTML sample for parser validation
-python -m src.parser p.html
+# Run directly
+npm start
 ```
 
 ---

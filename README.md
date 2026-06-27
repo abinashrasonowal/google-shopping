@@ -125,32 +125,33 @@ A single dataset item per run containing:
 
 ## Local parser testing
 
-A lightweight local harness is available for debugging HTML files.
+You can parse a saved HTML file directly with the exported `parseProduct` function:
 
 ```bash
-python test.py p.html
+node --input-type=module -e '
+import { readFileSync } from "node:fs";
+import { parseProduct } from "./src/parser.js";
+const html = readFileSync("p.html", "utf8");
+console.log(JSON.stringify(parseProduct(html, "input-url", "final-url"), null, 2));
+'
 ```
 
-This loads `p.html`, parses it with `GoogleShoppingImmersiveParser`, and prints the JSON output.
+This loads `p.html`, parses it, and prints the JSON output.
 
 ## Project structure
 
 ```
 .
-├── main.py                   # Entry point
 ├── src/
-│   ├── scraper.py            # URL construction, HTTP fetching, block detection
-│   ├── parser.py             # HTML parsing (GoogleShoppingImmersiveParser)
-│   └── client/
-│       ├── http_client.py    # Abstract HttpClient interface
-│       ├── proxy_http_client.py  # Apify residential proxy implementation
-│       └── local_http_client.py  # Local (non-proxy) implementation for dev
+│   ├── main.js               # Entry point: Actor lifecycle, URL construction, fetching, block detection
+│   ├── parser.js             # HTML parsing (cheerio) — parseProduct / isBlocked
+│   └── proxy_http_client.js  # The only HTTP client: Apify residential proxy (got-scraping)
 ├── .actor/
 │   ├── actor.json
 │   ├── input_schema.json
 │   └── dataset_schema.json
 ├── Dockerfile
-└── requirements.txt
+└── package.json
 ```
 
 ## Proxy requirements

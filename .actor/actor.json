@@ -7,8 +7,5 @@
     "version": "0.0",
     "buildTag": "latest",
     "input": "./input_schema.json",
-    "dockerfile": "../Dockerfile",
-    "runOptions": {
-        "command": "python main.py"
-    }
+    "dockerfile": "../Dockerfile"
 }

@@ -50,11 +50,6 @@
       "title": "Buying options",
       "type": "array",
       "description": "Merchant offers with price, currency, delivery info, seller logo, and offer title"
-    },
-    "competing_products": {
-      "title": "Competing products",
-      "type": "array",
-      "description": "Lower-priced or related product options shown by Google"
     }
   }
 }
