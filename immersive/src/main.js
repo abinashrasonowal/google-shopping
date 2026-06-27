@@ -1,7 +1,8 @@
 import { Actor, log } from 'apify';
 
-import { parseProduct, isBlocked } from './parser.js';
-import { ProxyHttpClient } from './proxy_http_client.js';
+import { ProxyHttpClient, isBlocked } from '@gs/client';
+
+import { parseProduct } from './immersive.js';
 
 const OSHOP_BASE_URL = 'https://www.google.com/search';
 const GOOGLE_DOMAIN_RE = /(^|\.)(google\.[a-z]{2,}(\.\w{2})?)$/i;

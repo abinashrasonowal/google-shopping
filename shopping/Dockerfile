@@ -1,28 +1,17 @@
-# First, specify the base Docker image.
-# You can see the Docker images from Apify at https://hub.docker.com/r/apify/.
-# You can also use any other image from Docker Hub.
+# Apify Node.js base image.
 FROM apify/actor-node:20
 
-# Copy just package.json and package-lock.json
-# to speed up the build using Docker layer cache.
-COPY package*.json ./
-
-# Install NPM packages, skip optional and development dependencies to
-# keep the image small. Avoid logging too much and print the dependency
-# tree for debugging
+# Install ONLY the runtime dependencies, from the build-generated dist/package.json
+# (which contains no `workspace:` specs — npm rejects those).
+COPY dist/package.json ./package.json
 RUN npm --quiet set progress=false \
  && npm install --omit=dev --omit=optional \
  && echo "Installed NPM packages:" \
  && (npm list --omit=dev --all || true) \
  && echo "Node.js version:" \
- && node --version \
- && echo "NPM version:" \
- && npm --version
+ && node --version
 
-# Next, copy the remaining files and directories with the source code.
-# Since we do this after NPM install, quick build will be really fast
-# for most source file changes.
-COPY . ./
+# Copy the self-contained bundle (src/ + @gs/shared inlined by esbuild).
+COPY dist ./dist
 
-# Run the image.
-CMD npm start --silent
+CMD ["node", "dist/main.js"]

@@ -1,3 +1,9 @@
+// Second-level labels that act as part of the public suffix (e.g. flipkart.co.in).
+const PUBLIC_SLDS = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac', 'gen', 'ind', 'nic']);
+
+// Match strength, strongest first — a higher number wins.
+const PRIORITY = { canonical_url: 4, slug: 3, domain: 2, merchant: 1 };
+
 /** Unwrap a Google redirect (`/url?q=`, `/aclk?adurl=`, ...) to the real destination URL. */
 function destUrl(targetUrl) {
     if (!targetUrl) return '';
@@ -23,27 +29,56 @@ function normHostPath(urlStr) {
     }
 }
 
+/** Registrable domain, e.g. "https://dl.flipkart.com/x" -> "flipkart.com". */
+function registrableDomain(urlOrHost) {
+    let host = urlOrHost || '';
+    try {
+        host = new URL(urlOrHost).hostname;
+    } catch {
+        // already a host (or empty)
+    }
+    host = host.replace(/^www\./, '').toLowerCase();
+    const labels = host.split('.').filter(Boolean);
+    if (labels.length < 2) return host;
+    let cut = labels.length - 2;
+    if (labels.length >= 3 && PUBLIC_SLDS.has(labels[cut])) cut -= 1;
+    return labels.slice(cut).join('.');
+}
+
 /**
- * Find the first buying option whose destination matches the source product, by
- * canonical URL (exact host+path) or by slug (substring of the destination URL).
+ * Find the buying option that best matches the source product, by (strongest first):
+ *   canonical_url (exact host+path) > slug (substring) > domain (same retailer) > merchant (name).
  *
- * @returns {{ reason: 'canonical_url'|'slug', offer: object }|null}
+ * @returns {{ reason: string, offer: object }|null}
  */
-export function findMatch(buyingOptions, { canonical, slug }) {
+export function findMatch(buyingOptions, { canonical, slug, host, store }) {
     const canonicalNorm = normHostPath(canonical);
     const slugLower = slug ? slug.toLowerCase() : null;
+    const srcDomain = registrableDomain(host || canonical || '');
+    const storeLower = store ? store.toLowerCase() : null;
 
+    let best = null;
     for (const offer of buyingOptions || []) {
         const dest = destUrl(offer.target_url || '');
-        if (!dest) continue;
-        const destNorm = normHostPath(dest);
+        const destNorm = dest ? normHostPath(dest) : '';
+        const destDomain = dest ? registrableDomain(dest) : '';
+        const merchant = (offer.merchant || '').toLowerCase();
 
+        let reason = null;
         if (canonicalNorm && destNorm && destNorm === canonicalNorm) {
-            return { reason: 'canonical_url', offer: { ...offer, resolved_url: dest } };
+            reason = 'canonical_url';
+        } else if (slugLower && dest.toLowerCase().includes(slugLower)) {
+            reason = 'slug';
+        } else if (srcDomain && destDomain && destDomain === srcDomain) {
+            reason = 'domain';
+        } else if (storeLower && merchant && (merchant.includes(storeLower) || storeLower.includes(merchant))) {
+            reason = 'merchant';
         }
-        if (slugLower && dest.toLowerCase().includes(slugLower)) {
-            return { reason: 'slug', offer: { ...offer, resolved_url: dest } };
+
+        if (reason && (!best || PRIORITY[reason] > PRIORITY[best.reason])) {
+            best = { reason, offer: { ...offer, resolved_url: dest || offer.target_url } };
+            if (reason === 'canonical_url') break; // strongest possible — stop early
         }
     }
-    return null;
+    return best;
 }

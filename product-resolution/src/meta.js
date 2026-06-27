@@ -6,12 +6,18 @@ function attr($, selector, name) {
     return v ? v.trim() : null;
 }
 
-/** Second-level domain as a coarse store name, e.g. "www.flipkart.com" -> "flipkart". */
+// Second-level labels that act as part of the public suffix (e.g. adidas.co.in, shop.co.uk).
+const PUBLIC_SLDS = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac', 'gen', 'ind', 'nic']);
+
+/** Registrable-domain label as a coarse store name, e.g. "www.adidas.co.in" -> "adidas". */
 function storeFromHost(urlStr) {
     try {
         const host = new URL(urlStr).hostname.replace(/^www\./, '');
-        const parts = host.split('.');
-        return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+        const labels = host.split('.');
+        if (labels.length < 2) return labels[0];
+        let i = labels.length - 2;
+        if (labels.length >= 3 && PUBLIC_SLDS.has(labels[i])) i -= 1;
+        return labels[i];
     } catch {
         return null;
     }

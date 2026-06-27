@@ -1,0 +1,4 @@
+# apify push starts from .gitignore; re-include the build output it ignores,
+# and skip uploading source that the image doesn't use (Docker runs dist/ only).
+src/
+!dist/

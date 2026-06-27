@@ -1,10 +1,10 @@
 import { Actor, log } from 'apify';
 
-import { ProxyHttpClient } from './proxy_http_client.js';
+import { ProxyHttpClient, isBlocked } from '@gs/client';
+import { runSearch } from '@gs/shopping';
+import { parseProduct } from '@gs/immersive';
 import { parseMeta } from './meta.js';
 import { buildQuery } from './query.js';
-import { buildSearchUrl, parseProducts } from './search.js';
-import { parseProduct, isBlocked } from './immersive.js';
 import { findMatch } from './match.js';
 
 const DEFAULT_MAX_RESULTS = 12;
@@ -41,6 +41,9 @@ async function resolveProduct(product, ctx, residential) {
     if (isBlocked(html)) return null;
 
     const parsed = parseProduct(html, product.url, finalUrl);
+    const merchants = (parsed.buying_options || []).map((o) => o.merchant).filter(Boolean);
+    log.info(`Immersive "${parsed.title}" → ${merchants.length} offers: [${merchants.join(', ')}]`);
+
     const match = findMatch(parsed.buying_options, ctx);
     if (!match) return null;
 
@@ -50,7 +53,7 @@ async function resolveProduct(product, ctx, residential) {
         offer: match.offer,
         product: {
             title: parsed.title,
-            immersive_url: parsed.immersive_url,
+            immersive_url: parsed.input_url,
             search_position: product.position,
             search_title: product.title,
             buying_options: parsed.buying_options,
@@ -71,10 +74,6 @@ try {
         groups: ['RESIDENTIAL'],
         countryCode: country.toUpperCase(),
     });
-    const serp = await Actor.createProxyConfiguration({
-        groups: ['GOOGLE_SERP'],
-        countryCode: country.toUpperCase(),
-    });
 
     // 1. Fetch the input page meta via residential proxy.
     log.info(`Fetching meta for ${url}`);
@@ -88,18 +87,17 @@ try {
     log.info(`Search query: "${query}"`);
     if (!query) throw new Error('Could not build a search query from the page meta');
 
-    // 3. Run the Google Shopping search via SERP proxy.
-    const searchClient = new ProxyHttpClient(await serp.newUrl());
-    const [searchHtml] = await searchClient.fetch(buildSearchUrl(query, country));
-    if (isBlocked(searchHtml)) throw new Error('Search request blocked by Google');
+    // 3. Run the Google Shopping search via SERP proxy (shared with the shopping actor).
+    const { products: searchResults, blocked } = await runSearch(query, country);
+    if (blocked) throw new Error('Search request blocked by Google');
 
-    const products = parseProducts(searchHtml, query, country)
+    const products = searchResults
         .filter((p) => p.url && p.url !== 'N/A')
         .slice(0, maxResults);
     log.info(`Resolving ${products.length} search results in parallel`);
 
     // 4. Fetch each immersive page in parallel; resolve on the FIRST matching hit.
-    const ctx = { canonical: meta.canonical, slug: meta.slug, host: meta.host };
+    const ctx = { canonical: meta.canonical, slug: meta.slug, host: meta.host, store: meta.store };
     const tasks = products.map((p) => resolveProduct(p, ctx, residential).catch(() => null));
     const hit = await firstTruthy(tasks);
 

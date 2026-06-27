@@ -9,7 +9,7 @@
             "type": "string",
             "description": "A retailer product page URL to resolve to its Google Shopping offer",
             "editor": "textfield",
-            "prefill": "https://www.flipkart.com/apple-iphone-16-ultramarine-128-gb/p/itm5cd9b327d7a8b"
+            "prefill": "https://www.flipkart.com/apple-iphone-16-black-128-gb/p/itm3c9366c8c93cb"
         },
         "country": {
             "title": "Country Code",

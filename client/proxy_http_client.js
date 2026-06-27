@@ -17,15 +17,20 @@ const DEFAULT_HEADERS = {
     'Accept-Language': 'en-IN,en;q=0.9',
     'Cache-Control': 'no-cache',
     Pragma: 'no-cache',
+    Priority: 'u=0, i',
+    'Sec-Ch-Ua': '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
     'Upgrade-Insecure-Requests': '1',
 };
 
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
-/** Fetches pages through an Apify proxy, with retries. */
+/** HTTP client that fetches pages through an Apify proxy, with retries. */
 export class ProxyHttpClient {
     constructor(proxyUrl, headers = null) {
         this.proxyUrl = proxyUrl;

@@ -1,15 +1,6 @@
 import { Actor, log } from 'apify';
 
-import { parseProducts, isBlocked } from './parser.js';
-import { ProxyHttpClient } from './proxy_http_client.js';
-
-const SEARCH_BASE_URL = 'http://www.google.com/search';
-
-function buildSearchUrl(query, country, start = 0) {
-    const params = new URLSearchParams({ q: query, tbm: 'shop', hl: 'en', gl: country });
-    if (start) params.set('start', String(start));
-    return `${SEARCH_BASE_URL}?${params.toString()}`;
-}
+import { runSearch } from './search.js';
 
 await Actor.init();
 try {
@@ -19,26 +10,19 @@ try {
 
     if (!query) throw new Error('Input field "query" is required');
 
-    const proxyConfiguration = await Actor.createProxyConfiguration({
-        groups: ['GOOGLE_SERP'],
-        countryCode: country.toUpperCase(),
-    });
-    const proxyUrl = await proxyConfiguration.newUrl();
-    const httpClient = new ProxyHttpClient(proxyUrl);
-
     log.info(`Searching for "${query}" in ${country}`);
-    const html = await httpClient.fetch(buildSearchUrl(query, country));
-    log.info(`Fetched ${html.length} bytes of HTML`);
+    const { products, html, blocked } = await runSearch(query, country);
+    log.info(`Fetched ${html.length} bytes; parsed ${products.length} products`);
 
-    if (isBlocked(html)) {
+    if (blocked) {
         log.warning('Blocked by Google (captcha / unusual traffic)');
+    } else if (products.length) {
+        await Actor.pushData(products);
+        log.info(`Pushed ${products.length} products to dataset`);
     } else {
-        const products = parseProducts(html, query, country);
-        log.info(`Parsed ${products.length} products`);
-        if (products.length) {
-            await Actor.pushData(products);
-            log.info(`Pushed ${products.length} products to dataset`);
-        }
+        // Selectors matched nothing — save the page so we can inspect the real DOM.
+        await Actor.setValue('search-page.html', html, { contentType: 'text/html' });
+        log.warning('0 products parsed — saved raw HTML to key-value store as "search-page.html"');
     }
 } finally {
     await Actor.exit();

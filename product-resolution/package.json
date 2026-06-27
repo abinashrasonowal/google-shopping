@@ -1,18 +1,24 @@
 {
-    "name": "product-resolution-engine",
+    "name": "@gs/product-resolution",
     "version": "0.0.1",
     "type": "module",
     "description": "Resolves a retailer product URL to its Google Shopping offer by meta-driven search and immersive matching.",
     "engines": {
         "node": ">=18"
     },
-    "main": "src/main.js",
+    "main": "dist/main.js",
     "scripts": {
-        "start": "node src/main.js"
+        "start": "node dist/main.js",
+        "dev": "node src/main.js"
     },
     "dependencies": {
         "apify": "^3.2.6",
         "cheerio": "^1.0.0",
         "got-scraping": "^4.0.6"
+    },
+    "devDependencies": {
+        "@gs/client": "workspace:*",
+        "@gs/shopping": "workspace:*",
+        "@gs/immersive": "workspace:*"
     }
 }
