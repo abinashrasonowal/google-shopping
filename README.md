@@ -1,62 +1,41 @@
-# Google Shopping Scraper
+# Google Shopping Scrapers
 
-Extract product listings from Google Shopping — title, price, rating, reviews, store, and product links. No browser required; runs fast on Apify's infrastructure with SERP proxies.
+Two independent Apify actors for scraping Google Shopping, written in JavaScript (Node.js, ESM). Each lives in its own directory and is deployed separately.
 
-## What it does
+| Directory | Actor | Input | Output |
+|---|---|---|---|
+| [`shopping/`](shopping/) | Search-results scraper | `query` + `country` | List of ~40 product listings |
+| [`immersive/`](immersive/) | Product-detail scraper | product `url` (with `prds=`) + `country` | Single product: specs, sellers, filters |
 
-Searches Google Shopping for any query and returns structured product data directly from the listing page — no JavaScript rendering needed.
+Both share the same shape:
 
-**Sample output:**
-```json
-{
-  "title": "Apple iPhone 16 256GB",
-  "price": "₹79,900",
-  "rating": 4.6,
-  "review_count": 11000,
-  "source": "Flipkart",
-  "url": "https://www.google.com/search?ibp=oshop&..."
-}
+```
+<actor>/
+├── .actor/            # actor.json, input/output/dataset schemas, openapi
+├── src/
+│   ├── main.js        # Actor lifecycle, URL building, fetch, block detection
+│   ├── parser.js      # HTML parsing (cheerio)
+│   └── proxy_http_client.js  # the only HTTP client: Apify proxy via got-scraping
+├── Dockerfile         # apify/actor-node:20
+└── package.json
 ```
 
-## Input
+## Deploying
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `q` | string | yes | — | Search query e.g. `wireless headphones` |
-| `country` | string | | `in` | 2-letter country code e.g. `us`, `gb`, `de` |
+Each directory is a self-contained, independently deployable actor. From inside the actor's directory:
 
-**Example input:**
-```json
-{
-  "q": "iphone 16",
-  "country": "in"
-}
+```bash
+cd shopping      # or: cd immersive
+npm install
+apify run        # run locally
+apify push       # deploy to Apify
 ```
 
-## Output
-
-Each item in the dataset contains:
-
-| Field | Type | Description |
-|---|---|---|
-| `title` | string | Product name |
-| `price` | string | Current price e.g. `₹79,900` |
-| `rating` | number | Average rating out of 5 |
-| `review_count` | integer | Total review count |
-| `source` | string | Primary store name |
-| `url` | string | Google Shopping product URL |
-
-## Usage notes
-
-- Results reflect Google Shopping listings for the given country — prices and availability vary by region
-- `rating` and `review_count` are `null` when Google does not show them for a product
-- The `url` field links to the Google Shopping comparison page, not the retailer directly
-- Set `country` to match your target market for accurate pricing and store results
+The `apify` CLI uses the build context of the current directory (its `.actor/`, `Dockerfile`, and `package.json`), so the two actors never interfere with each other.
 
 ## Proxy requirements
 
-This actor uses **residential proxies** (`RESIDENTIAL` group) to reduce sparse Google Shopping responses and blocks. Make sure residential proxy access is enabled on your Apify account.
+- **shopping** uses `GOOGLE_SERP` proxies.
+- **immersive** uses `RESIDENTIAL` proxies.
 
-## Cost
-
-Typically scrapes **40 products per run** in under 10 seconds. One run consumes approximately 0.01–0.02 compute units.
+Make sure the relevant proxy access is enabled on your Apify account.

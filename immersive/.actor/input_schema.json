@@ -1,0 +1,23 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "Google Shopping Immersive Scraper",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "url": {
+            "title": "Product URL",
+            "type": "string",
+            "description": "Google Shopping immersive product URL containing a prds query parameter",
+            "editor": "textfield",
+            "default": "https://www.google.com/search?ibp=oshop&q=Apple+iPhone+16+(128GB+Storage,+Ultramarine)&prds=catalogid:3996416311311992647,gpcid:1465601687215425854,headlineOfferDocid:12871151456716918231,imageDocid:9363746595791942731,mid:576462796102771346,productid:16690412950309539714,pvo:25,pvt:hg,rds:PC_1465601687215425854%7CPROD_PC_1465601687215425854&pvorigin=25&hl=en&gl=in"
+        },
+        "country": {
+            "title": "Country Code",
+            "type": "string",
+            "description": "Google country code for localized results (e.g. us, gb, in)",
+            "default": "in",
+            "editor": "textfield"
+        }
+    },
+    "required": []
+}
