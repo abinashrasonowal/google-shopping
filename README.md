@@ -62,12 +62,14 @@ project(':client')` pattern). Importing `@gs/shopping` resolves to its library
 (`src/search.js`), never its actor `main.js`, so no `Actor.init()` runs on import.
 
 ```bash
-pnpm install     # once, from the repo root — links @gs/shared into each actor
+pnpm install     # once, from the repo root — links the @gs/* workspace modules into each actor
 pnpm build       # bundle all actors  (or: pnpm build:shopping / :immersive / :resolution)
 ```
 
-`pnpm build` runs [`scripts/build.mjs`](scripts/build.mjs): esbuild inlines `@gs/shared`
-into `<actor>/dist/main.js` (keeping `apify`/`cheerio`/`got-scraping` external) and writes
+`pnpm build` runs [`scripts/build.mjs`](scripts/build.mjs): esbuild inlines each actor's
+`@gs/*` workspace imports (e.g. `@gs/client`, and for product-resolution also `@gs/shopping`
++ `@gs/immersive`) into `<actor>/dist/main.js` (keeping `apify`/`cheerio`/`got-scraping`
+external) and writes
 a clean `<actor>/dist/package.json` with only the runtime deps — no `workspace:` specs,
 which npm (used in the Docker image) rejects.
 
