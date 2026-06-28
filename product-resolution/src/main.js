@@ -37,6 +37,7 @@ function firstTruthy(promises) {
 /** Fetch one immersive page and check its buying options for a match. */
 async function resolveProduct(product, ctx, residential) {
     const client = new ProxyHttpClient(await residential.newUrl());
+    log.info(`Fetching immersive URL [#${product.position}]: ${product.url}`);
     const [html, finalUrl] = await client.fetch(product.url);
     if (isBlocked(html)) return null;
 
