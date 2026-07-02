@@ -15,7 +15,10 @@ try {
     log.info(`Fetched ${html.length} bytes; parsed ${products.length} products`);
 
     if (blocked) {
-        log.warning('Blocked by Google (captcha / unusual traffic)');
+        // Save the block page for inspection and fail the run so callers can
+        // tell "blocked" apart from a genuine empty result.
+        await Actor.setValue('blocked-page.html', html, { contentType: 'text/html' });
+        await Actor.fail('Blocked by Google (captcha / unusual traffic) — saved HTML as "blocked-page.html"');
     } else if (products.length) {
         await Actor.pushData(products);
         log.info(`Pushed ${products.length} products to dataset`);

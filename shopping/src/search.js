@@ -6,6 +6,8 @@ import { ProxyHttpClient, isBlocked } from '@gs/client';
 import { SELECTORS } from './selectors.js';
 
 const OSHOP_BASE_URL = 'https://www.google.com/search';
+// Plain http on purpose: Apify's GOOGLE_SERP proxy only accepts http:// targets
+// (the proxy performs the actual fetch). Do not change to https.
 const SEARCH_BASE_URL = 'http://www.google.com/search';
 
 /** Build the `tbm=shop` search-results URL for a query. */
@@ -88,12 +90,12 @@ function extractRating($card) {
 }
 
 function extractReviewCount($card) {
-    const m = ratingLabel($card).match(/([\d,]+\.?\d*[kK]?)\s+(?:user\s+)?reviews?/);
+    const m = ratingLabel($card).match(/([\d,]+\.?\d*[kKmM]?)\s+(?:user\s+)?reviews?/);
     if (!m) return null;
     const raw = m[1].replace(/,/g, '');
-    if (raw.slice(-1).toLowerCase() === 'k') {
-        return Math.trunc(parseFloat(raw.slice(0, -1)) * 1000);
-    }
+    const suffix = raw.slice(-1).toLowerCase();
+    if (suffix === 'k') return Math.trunc(parseFloat(raw.slice(0, -1)) * 1_000);
+    if (suffix === 'm') return Math.trunc(parseFloat(raw.slice(0, -1)) * 1_000_000);
     return Math.trunc(parseFloat(raw));
 }
 
