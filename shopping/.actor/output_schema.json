@@ -4,13 +4,14 @@
     "overview": {
       "title": "Products",
       "transformation": {
-        "fields": ["position", "title", "price", "rating", "review_count", "source", "url", "image"]
+        "fields": ["position", "title", "price", "second_hand_condition", "rating", "review_count", "source", "url", "image"]
       },
       "display": {
         "component": "table",
         "properties": {
           "title": { "label": "Title" },
           "price": { "label": "Price" },
+          "second_hand_condition": { "label": "Condition" },
           "rating": { "label": "Rating" },
           "review_count": { "label": "Reviews" },
           "source": { "label": "Source" },

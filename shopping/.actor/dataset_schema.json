@@ -35,6 +35,12 @@
       "nullable": true,
       "description": "Total number of reviews"
     },
+    "second_hand_condition": {
+      "title": "Condition",
+      "type": "string",
+      "nullable": true,
+      "description": "Second-hand condition tag when present (pre-owned, refurbished, used); null for new items"
+    },
     "source": {
       "title": "Source",
       "type": "string",

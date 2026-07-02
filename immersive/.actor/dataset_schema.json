@@ -44,7 +44,7 @@
     "filters": {
       "title": "Filters",
       "type": "array",
-      "description": "Variant filters (e.g. Colour, Capacity) with available options and selected state"
+      "description": "Variant filters (e.g. Colour, Capacity) with available options, selected state, and a per-option immersive URL (the option's pvf token swapped into prds)"
     },
     "buying_options": {
       "title": "Buying options",

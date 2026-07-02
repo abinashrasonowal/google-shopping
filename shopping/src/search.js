@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 
 import { ProxyHttpClient, isBlocked } from '@gs/client';
 
+import { SELECTORS } from './selectors.js';
+
 const OSHOP_BASE_URL = 'https://www.google.com/search';
 const SEARCH_BASE_URL = 'http://www.google.com/search';
 
@@ -77,7 +79,7 @@ function extractInjectedHtml(html) {
 }
 
 function ratingLabel($card) {
-    return $card.find('[role="img"][aria-label*="Rated"]').first().attr('aria-label') || '';
+    return $card.find(SELECTORS.rating).first().attr('aria-label') || '';
 }
 
 function extractRating($card) {
@@ -95,6 +97,21 @@ function extractReviewCount($card) {
     return Math.trunc(parseFloat(raw));
 }
 
+/**
+ * SerpApi-style second-hand condition ("pre-owned" / "refurbished" / "used").
+ * The tag slot next to the price also carries discount tags like
+ * "5% off ₹69,900", so only exact condition labels are accepted.
+ */
+function extractCondition($card) {
+    const tags = $card.find(SELECTORS.priceTag);
+    for (let i = 0; i < tags.length; i++) {
+        const label = tags.eq(i).text().trim().toLowerCase();
+        if (label === 'refurbished' || label === 'used') return label;
+        if (label === 'pre-owned' || label === 'preowned') return 'pre-owned';
+    }
+    return null;
+}
+
 /** Find a valid product image inside a card: direct src/data-src, else via the ldi map. */
 function findImageInCard($, cardEl, ldiMap) {
     let found = null;
@@ -109,7 +126,7 @@ function findImageInCard($, cardEl, ldiMap) {
     });
     if (found) return found;
 
-    const dimg = $(cardEl).find('img[id^="dimg_"]').first();
+    const dimg = $(cardEl).find(SELECTORS.deferredImage).first();
     const id = dimg.attr('id');
     if (id && ldiMap[id]?.startsWith('http')) return ldiMap[id];
 
@@ -146,21 +163,20 @@ export function parseProducts(html, query, country) {
 
     // Fallback image map from the hidden injected HTML (pid / title -> image URL).
     const injectedImages = {};
-    $inj('[data-pid], .MUWJ8c, g-inner-card').each((_, card) => {
+    $inj(SELECTORS.injectedCard).each((_, card) => {
         const img = findImageInCard($inj, card, ldiMap);
         if (!img) return;
         const pid = $inj(card).attr('data-pid');
-        const title = text($inj(card).find('.gkQHve'));
+        const title = text($inj(card).find(SELECTORS.title));
         if (pid) injectedImages[pid] = img;
         if (title) injectedImages[title] = img;
     });
 
     const products = [];
     const seen = new Set();
-    // Google serves two layouts: the older `.Ez5pwe` grid and the newer `.YBo8bb` list.
-    $('.Ez5pwe, .YBo8bb').each((_, cardEl) => {
+    $(SELECTORS.productCard).each((_, cardEl) => {
         const $card = $(cardEl);
-        const container = $card.find('[data-cid]').first();
+        const container = $card.find(SELECTORS.dataContainer).first();
         if (!container.length) return;
 
         const catalogid = container.attr('data-cid');
@@ -183,7 +199,7 @@ export function parseProducts(html, query, country) {
             url = buildProductUrl(query, country, { headlineOfferDocid, imageDocid, rds, pid });
         }
 
-        const title = text($card.find('.gkQHve'));
+        const title = text($card.find(SELECTORS.title));
         const image = findImageInCard($, cardEl, ldiMap)
             || (pid && injectedImages[pid])
             || (title && injectedImages[title])
@@ -193,10 +209,11 @@ export function parseProducts(html, query, country) {
             position: products.length + 1,
             title,
             url,
-            price: text($card.find('.lmQWe')),
+            price: text($card.find(SELECTORS.price)),
+            second_hand_condition: extractCondition($card),
             rating: extractRating($card),
             review_count: extractReviewCount($card),
-            source: text($card.find('.WJMUdc')),
+            source: text($card.find(SELECTORS.source)),
             image,
         });
     });

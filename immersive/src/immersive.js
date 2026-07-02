@@ -1,5 +1,8 @@
 import * as cheerio from 'cheerio';
 
+import { SELECTORS } from './selectors.js';
+import { encodePvf, decodePvf, withSelection, pvfFromUrl } from './pvf.js';
+
 const CURRENCY_BY_SYMBOL = {
     '₹': 'INR',
     '$': 'USD',
@@ -96,7 +99,7 @@ function isValidProductImage(url) {
 }
 
 function extractMainImage($, imageMap) {
-    const metaImg = $('meta[property="og:image"]').attr('content');
+    const metaImg = $(SELECTORS.mainImageMeta).attr('content');
     if (metaImg && isValidProductImage(metaImg)) {
         return metaImg;
     }
@@ -109,7 +112,7 @@ function extractMainImage($, imageMap) {
 function extractAllImages($, mainImage) {
     const images = [];
 
-    $('[data-item-index][data-src]').each((_, el) => {
+    $(SELECTORS.galleryImage).each((_, el) => {
         const src = $(el).attr('data-src');
         if (isValidProductImage(src) && !images.includes(src)) {
             images.push(src);
@@ -133,7 +136,7 @@ function extractRatingLabel($) {
 }
 
 function extractTitle($) {
-    const titleEl = $('[data-attrid="product_title"]').first();
+    const titleEl = $(SELECTORS.title).first();
     if (titleEl.length) return nodeText(titleEl.get(0));
 
     const title = $('title').first().text();
@@ -141,10 +144,10 @@ function extractTitle($) {
 }
 
 function extractDescription($) {
-    const container = $('[data-attrid="product_description"]').first();
+    const container = $(SELECTORS.description).first();
     if (!container.length) return null;
 
-    let textEl = container.find('#description_container').first();
+    let textEl = container.find(SELECTORS.descriptionText).first();
     if (!textEl.length) textEl = container;
 
     return cleanText(nodeText(textEl.get(0), ' '));
@@ -169,7 +172,7 @@ function extractReviewCount(ratingLabel) {
 
 function extractSpecs($) {
     const specs = {};
-    $('[data-attrid="product_attributes_facet"]').each((_, el) => {
+    $(SELECTORS.spec).each((_, el) => {
         const text = nodeText(el, ':');
         const sep = text.indexOf(':');
         if (sep !== -1) {
@@ -181,22 +184,45 @@ function extractSpecs($) {
     return specs;
 }
 
-function extractFilters($, $inj) {
+/**
+ * Build the immersive URL for a variant by swapping the `pvf:` token inside the
+ * `prds` parameter. The token is generated from the filter category and option
+ * names (see pvf.js) rather than read from `data-pvf` attributes.
+ */
+function buildVariantUrl(baseUrl, pvf) {
+    if (!baseUrl || !pvf) return null;
+    let parsed;
+    try {
+        parsed = new URL(baseUrl);
+    } catch {
+        return null;
+    }
+    const prds = parsed.searchParams.get('prds');
+    if (!prds) return null;
+    const parts = prds.split(',').filter((p) => !p.startsWith('pvf:'));
+    parts.push(`pvf:${pvf}`);
+    parsed.searchParams.set('prds', parts.join(','));
+    return parsed.toString();
+}
+
+function extractFilters($, $inj, baseUrl) {
     const filters = {};
     const seen = new Set();
+    // Current selection state, used as the base every option is merged onto.
+    const baseSelections = decodePvf(pvfFromUrl(baseUrl));
 
     const process = ($$) => {
-        $$('[data-pvf]').each((_, el) => {
+        $$(SELECTORS.filterOption).each((_, el) => {
             const $el = $$(el);
 
             // 1. Category name from the parent list container.
             let category;
-            const parentList = $el.closest('[role="list"][aria-label]');
+            const parentList = $el.closest(SELECTORS.filterList);
             if (parentList.length) {
                 category = (parentList.attr('aria-label') || '').replace(' options', '').trim();
             } else {
                 category = 'Unknown';
-                const prevHeading = findPrevious($$, el, '[role="heading"]');
+                const prevHeading = findPrevious($$, el, SELECTORS.filterHeading);
                 if (prevHeading) {
                     category = nodeText(prevHeading, ':').split(':')[0].trim();
                 }
@@ -226,6 +252,14 @@ function extractFilters($, $inj) {
             const imgUrl = $el.attr('data-img');
             if (imgUrl) opt.image = imgUrl;
 
+            // 6. Variant link: encode a pvf token from the category/option names
+            // (merged onto the current selection) and swap it into the input URL.
+            if (category !== 'Unknown' && optionName) {
+                const pvf = encodePvf(withSelection(baseSelections, category, optionName));
+                const variantUrl = buildVariantUrl(baseUrl, pvf);
+                if (variantUrl) opt.url = variantUrl;
+            }
+
             filters[category].push(opt);
         });
     };
@@ -249,7 +283,7 @@ function extractCurrentPrice($, cardNode) {
     const $card = $(cardNode);
     const isCurrent = (a) => a.startsWith('Current price:') || a.startsWith('Current price is');
 
-    const $container = $card.find('[data-crcy]').first();
+    const $container = $card.find(SELECTORS.priceContainer).first();
     let $priceEl = $();
     if ($container.length) {
         $priceEl = findByAria($, $container, isCurrent);
@@ -286,7 +320,7 @@ function extractOldPrice($, cardNode) {
 }
 
 function extractOfferTitle($, cardNode) {
-    const titleEl = $(cardNode).find('.rYkzq.y1FcZd').first();
+    const titleEl = $(cardNode).find(SELECTORS.offerTitle).first();
     if (!titleEl.length) return null;
     return cleanText(nodeText(titleEl.get(0), ' '));
 }
@@ -298,7 +332,7 @@ function extractOfferRating($, cardNode) {
 }
 
 function extractOfferStatus($, cardNode) {
-    const statusEl = $(cardNode).find('.OaQPmf').first();
+    const statusEl = $(cardNode).find(SELECTORS.offerStatus).first();
     if (!statusEl.length) return null;
     return cleanText(nodeText(statusEl.get(0), ' '));
 }
@@ -317,15 +351,15 @@ function extractSellersNew($, $cards) {
     $cards.each((_, cardNode) => {
         const $card = $(cardNode);
 
-        const merchant = $card.find('[data-report-feedback-about-context]').first().attr('data-report-feedback-about-context')
-            || cleanText(nodeText($card.find('.gUf0b').first().get(0), ' '));
+        const merchant = $card.find(SELECTORS.merchantContext).first().attr('data-report-feedback-about-context')
+            || cleanText(nodeText($card.find(SELECTORS.merchantName).first().get(0), ' '));
 
-        const linkEl = $card.find('a[href^="http"]').first();
+        const linkEl = $card.find(SELECTORS.externalLink).first();
         const price = extractCurrentPrice($, cardNode);
         const oldPrice = extractOldPrice($, cardNode);
 
         let offerRating = null;
-        const ratingEl = $card.find('.NFq8Ad').first();
+        const ratingEl = $card.find(SELECTORS.offerRatingNew).first();
         if (ratingEl.length) {
             const m = ratingEl.text().match(/([\d.]+)/);
             if (m) offerRating = parseFloat(m[1]);
@@ -366,13 +400,13 @@ function extractSellersOld($, imageMap, offersGrid) {
     const seen = new Set();
 
     const $merchants = offersGrid.length
-        ? offersGrid.find('[data-merchant-name]')
-        : $('[data-merchant-name]');
+        ? offersGrid.find(SELECTORS.merchantOld)
+        : $(SELECTORS.merchantOld);
 
     $merchants.each((_, el) => {
         const $el = $(el);
 
-        let $card = $el.closest('[role="listitem"]');
+        let $card = $el.closest(SELECTORS.offerCardOld);
         if (!$card.length) $card = $el.parent();
         if (!$card.length) $card = $el;
         const cardNode = $card.first().get(0);
@@ -421,9 +455,9 @@ function extractSellersOld($, imageMap, offersGrid) {
 }
 
 function extractSellers($, imageMap) {
-    const offersGrid = $('[data-attrid="organic_offers_grid"]').first();
+    const offersGrid = $(SELECTORS.offersGrid).first();
     // New layout: offer cards are listitems (jsname="uwagwf") inside the grid.
-    const $newCards = offersGrid.length ? offersGrid.find('[jsname="uwagwf"][role="listitem"]') : $();
+    const $newCards = offersGrid.length ? offersGrid.find(SELECTORS.offerCardNew) : $();
     if ($newCards.length) return extractSellersNew($, $newCards);
     return extractSellersOld($, imageMap, offersGrid);
 }
@@ -443,6 +477,8 @@ export function parseProduct(html, url, finalUrl) {
 
     const mainImage = extractMainImage($, imageMap);
     const ratingLabel = extractRatingLabel($);
+    // Variant links need a URL that still carries `prds=`; redirects can drop it.
+    const variantBaseUrl = (finalUrl && finalUrl.includes('prds=')) ? finalUrl : url;
 
     return {
         input_url: url,
@@ -453,7 +489,7 @@ export function parseProduct(html, url, finalUrl) {
         rating: extractRating(ratingLabel),
         review_count: extractReviewCount(ratingLabel),
         features: extractSpecs($),
-        filters: extractFilters($, $inj),
+        filters: extractFilters($, $inj, variantBaseUrl),
         buying_options: extractSellers($, imageMap),
     };
 }

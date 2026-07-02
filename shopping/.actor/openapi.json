@@ -46,6 +46,7 @@
                       "title":        { "type": "string", "nullable": true },
                       "url":          { "type": "string", "format": "uri" },
                       "price":        { "type": "string", "nullable": true },
+                      "second_hand_condition": { "type": "string", "nullable": true, "enum": ["pre-owned", "refurbished", "used", null] },
                       "rating":       { "type": "number", "nullable": true },
                       "review_count": { "type": "integer", "nullable": true },
                       "image":        { "type": "string", "format": "uri", "nullable": true },
