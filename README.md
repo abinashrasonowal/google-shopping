@@ -2,6 +2,10 @@
 
 Three independent Apify actors for scraping Google Shopping, written in JavaScript (Node.js, ESM). Each lives in its own directory and is deployed separately.
 
+**Run these actors directly on Apify:**
+- 🛒 [Google Shopping Search Scraper](https://apify.com/breathtaking_turtle/google-shopping)
+- 🔎 [Google Shopping Product Details Scraper](https://apify.com/breathtaking_turtle/google-shopping-immersive)
+
 | Directory | Actor | Input | Output |
 |---|---|---|---|
 | [`shopping/`](shopping/) | Search-results scraper | `query` + `country` | List of ~40 product listings |
